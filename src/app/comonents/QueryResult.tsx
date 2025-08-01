@@ -1,7 +1,8 @@
 export type QueryReultProps = {
     /* A two-dimensional array representing the table */
-    data: string[][];
+    data?: string[][];
     errorMessage?: string;
+    isDataLoading?: boolean;
 }
 
 /**
@@ -11,8 +12,21 @@ export type QueryReultProps = {
  * @returns {JSX.Element} - The rendered component
  */
 
-export const QueryResult = ({ data, errorMessage }: QueryReultProps) => {
-    if (!data || data.length === 0) {
+export const QueryResult = ({ data, errorMessage, isDataLoading }: QueryReultProps) => {
+    if (isDataLoading) {
+        return (
+            <div className="query-result flex justify-center items-center mt-10">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+                <span className="ml-4 text-gray-500">Loading...</span>
+            </div>
+        );
+    }
+
+    if (data === undefined) {
+        return <div className="query-result text-gray-500 mt-10">Your query results will appear here.</div>;
+    }
+
+    if (data.length === 0) {
         return <div className="query-result text-center text-gray-500">No results found.</div>;
     }
 
@@ -23,14 +37,14 @@ export const QueryResult = ({ data, errorMessage }: QueryReultProps) => {
     const columns: string[] = data[0];
 
     return (
-        <div className="query-result w-full overflow-x-auto">
+        <div className="query-result w-full overflow-auto w-full max-h-50 scroll-smooth">
             <table className="table-auto w-full border-collapse border border-gray-300">
                 <thead>
                     <tr className="bg-gray-200">
                         {columns.map((col: string) => (
                             <th
                                 key={col}
-                                className="border border-gray-300 px-6 py-3 text-left whitespace-nowrap min-w-[150px]"
+                                className="border border-gray-300 py-5 px-3 text-left whitespace-nowrap min-w-[150px]"
                             >
                                 {col}
                             </th>
@@ -48,7 +62,7 @@ export const QueryResult = ({ data, errorMessage }: QueryReultProps) => {
                                 {row.map((cell: string, colIndex) => (
                                     <td
                                         key={`${rowIndex}-${colIndex}`}
-                                        className="border border-gray-300 whitespace-nowrap min-w-[150px]"
+                                        className="border border-gray-300 whitespace-nowrap min-w-[150px] p-3"
                                     >
                                         {cell}
                                     </td>
