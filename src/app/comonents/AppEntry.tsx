@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { QueryBox } from "./QueryBox";
 import { QueryResult } from "./QueryResult";
 
@@ -8,12 +8,13 @@ import { QueryResult } from "./QueryResult";
  */
 export const AppEntry = () => {
     const [data, setData] = useState<string[][]>([])
+    const [errorMessage, setErrorMessage] = useState<string>();
 
-    useEffect(() => {
+    const executeQuery = (query: string) => {
         fetch("/api/categories.csv")
             .then((response) => {
                 if (!response.ok) {
-                    throw new Error("Network response was not ok");
+                    setErrorMessage("Failed to fetch data. Please try again later.");
                 }
                 return response.text();
             })
@@ -22,13 +23,12 @@ export const AppEntry = () => {
                 const parsedData: string[][] = csvText.split("\n").map((row) => row.split(","));
                 setData(parsedData);
             })
-    }, []);
+    };
 
     return (
-        <section>
-            <QueryBox />
-            <QueryResult data={data} />
+        <section className="w-full p-10 font-mono">
+            <QueryBox onQueryExecute={executeQuery} />
+            <QueryResult data={data} errorMessage={errorMessage} />
         </section>
-
     );
 }
