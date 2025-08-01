@@ -1,4 +1,3 @@
-import { on } from "events";
 import { useState } from "react";
 
 export type QueryBoxProps = {
