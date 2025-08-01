@@ -838,8 +838,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 11076,BONAP,4,1998-05-06 00:00:00.000,1998-06-03 00:00:00.000,NULL,2,38.28,Bon app',12 rue des Bouchers,Marseille,NULL,13008,France
 11077,RATTC,1,1998-05-06 00:00:00.000,1998-06-03 00:00:00.000,NULL,2,8.53,Rattlesnake Canyon Grocery,2817 Milton Dr.,Albuquerque,NM,87110,USA`
     // Send the CSV data
-    // add delay of 3s
-    setTimeout(() => {
-
-    res.status(200).send(csvData);}, 3000);
+    
+    res.status(200).send(csvData);
 }
