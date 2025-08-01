@@ -25,8 +25,8 @@ export const useFetchQueryResults = () => {
             const csvText = await response.text();
             const parsedData: string[][] = csvText.split("\n").map((row) => row.split(","));
             setData(parsedData);
-        } catch (error: any) {
-            setErrorMessage(error.message);
+        } catch (error: unknown) {
+            setErrorMessage("An error occurred while fetching the query results. " + (error instanceof Error ? error.message : "Unknown error"));
         } finally {
             setIsDataLoading(false);
         }

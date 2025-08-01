@@ -1,5 +1,4 @@
 'use client'
-import { useState } from "react";
 import { QueryBox } from "./QueryBox";
 import { QueryResult } from "./QueryResult";
 import { useFetchQueryResults } from "../hooks/useFetchQueryResults";
