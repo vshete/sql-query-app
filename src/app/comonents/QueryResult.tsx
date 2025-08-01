@@ -37,7 +37,7 @@ export const QueryResult = ({ data, errorMessage, isDataLoading }: QueryReultPro
     const columns: string[] = data[0];
 
     return (
-        <div className="query-result w-full overflow-auto w-full max-h-50 scroll-smooth">
+        <div className="query-result w-full overflow-auto w-full max-h-75 scroll-smooth">
             <table className="table-auto w-full border-collapse border border-gray-300">
                 <thead>
                     <tr className="bg-gray-200">

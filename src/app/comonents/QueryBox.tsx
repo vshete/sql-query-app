@@ -1,45 +1,46 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export type QueryBoxProps = {
     onQueryExecute: (query: string) => void;
-    isDisabled?: boolean
+    isDisabled?: boolean;
+    initialQuery?: string;
 }
 
 /**
  * A component that can be used to enter SQL queries.
  * @returns JSX.Element
  */
-export const QueryBox = ({ onQueryExecute, isDisabled }: QueryBoxProps) => {
-    const[query, setQuery] = useState<string>("");
+export const QueryBox = ({ onQueryExecute, isDisabled, initialQuery = "" }: QueryBoxProps) => {
+    const [query, setQuery] = useState(initialQuery);
 
-    const onQueryChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setQuery(event.target.value);
-    }
+    useEffect(() => {
+        setQuery(initialQuery);
+    }, [initialQuery]);
 
-    const onExecuteClicked = () => {
-        if(!query.trim()) {
-            alert("Please enter a query.");
-            return;
-        }
+    const handleExecute = () => {
         onQueryExecute(query);
-    }
-    
+    };
+
     return (
         <div className="query-box w-full mb-4 font-mono">
             <textarea
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
                 disabled={isDisabled}
-                onChange={onQueryChange}
-                className={`query-input w-full min-h-75 p-5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDisabled ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : ''}`}
+                className="query-input w-full min-h-75 p-5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter your SQL query here..."
             />
             <button
+                onClick={handleExecute}
                 disabled={isDisabled}
-                onClick={onExecuteClicked}
-                className={`execute-button mt-10 p-3 cursor-pointer rounded-md 
-                    ${isDisabled ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                className={`execute-button mt-3 p-3 cursor-pointer rounded-md ${
+                    isDisabled
+                        ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                        : "bg-blue-500 text-white hover:bg-blue-600"
+                }`}
             >
                 Execute
             </button>
         </div>
     );
-}
+};
