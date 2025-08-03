@@ -19,7 +19,7 @@ export const QuerySidebar = ({ queries, onQuerySelect }: QuerySidebarProps) => {
                     <li key={index}>
                         <button
                             onClick={() => onQuerySelect(queryObj)}
-                            className="w-full text-left p-2 bg-blue-100 hover:bg-blue-200 rounded-md"
+                            className="w-full text-left p-2 bg-blue-100 hover:bg-blue-200 rounded-md cursor-pointer"
                         >
                             {queryObj.name}
                         </button>

@@ -103,30 +103,29 @@ export const QueryResult = ({
 
     return (
         <div>
-
             <div>
                 <button onClick={onDownload} className="bg-blue-500 text-white p-2 rounded mb-4 cursor-pointer">
                     Download Results
                 </button>
             </div>
             <div className="query-result w-full overflow-x-auto scroll-smooth">
-                <table className="table-auto border-collapse border border-gray-300" style={{ ...columnSizeVars }}>
+                <table className="table-fixed w-full border-collapse border border-gray-300" style={{ ...columnSizeVars }}>
                     <thead>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <tr key={headerGroup.id} className="bg-gray-200">
                                 {headerGroup.headers.map((header) => (
                                     <th
                                         key={header.id}
-                                        className="border border-gray-300 py-5 px-3 text-left whitespace-nowrap min-w-[150px] cursor-pointer"
+                                        className="border border-gray-300 py-5 px-3 text-left min-w-[150px] whitespace-nowrap cursor-pointer group relative overflow-hidden"
                                         style={{
-                                            width: `calc(var(--header-${header?.id}-size) * 1px)`,
+                                            width: columnSizeVars[`--header-${header.id}-size`] ? `calc(var(--header-${header?.id}-size) * 1px)` : 'auto',
                                         }}
                                     >
                                         <div
                                             className={`
                                                 ${header.column.getCanSort()
                                                     ? 'cursor-pointer select-none'
-                                                    : ''} group relative`
+                                                    : ''}`
                                             }
                                             title={
                                                 header.column.getCanSort()
@@ -158,8 +157,8 @@ export const QueryResult = ({
                                             <div
                                                 {...{
                                                     onDoubleClick: () => header.column.resetSize(),
-                                                    onMouseDown: header.getResizeHandler(document),
-                                                    onTouchStart: header.getResizeHandler(document),
+                                                    onMouseDown: header.getResizeHandler(),
+                                                    onTouchStart: header.getResizeHandler(),
                                                     className: `resizer absolute top-0 h-full right-0 w-[5px] cursor-col-resize select-none touch-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${header.column.getIsResizing() ? 'bg-blue-500 opacity-100' : 'bg-black bg-opacity-50'}`,
                                                 }}
                                             />
@@ -178,9 +177,9 @@ export const QueryResult = ({
                                 {row.getVisibleCells().map((cell) => (
                                     <td
                                         key={cell.id}
-                                        className="border border-gray-300 whitespace-nowrap min-w-[150px] p-3"
+                                        className="border border-gray-300 whitespace-nowrap min-w-[150px] p-3 overflow-hidden text-ellipsis"
                                         style={{
-                                            width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
+                                            width: columnSizeVars[`--col-${cell.column.id}-size`] ? `calc(var(--col-${cell.column.id}-size) * 1px)` : 'auto',
                                         }}
                                     >
                                         {flexRender(
