@@ -27,7 +27,7 @@ export const QueryBox = ({ onQueryExecute, isDisabled, initialQuery = "" }: Quer
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 disabled={isDisabled}
-                className="query-input w-full min-h-75 p-5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="query-input w-full min-h-50 p-5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter your SQL query here..."
             />
             <button
