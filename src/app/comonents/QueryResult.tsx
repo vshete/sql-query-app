@@ -14,6 +14,7 @@ export type QueryReultProps = {
     data?: string[][];
     errorMessage?: string;
     isDataLoading?: boolean;
+    onDownload?: () => void;
 }
 
 /**
@@ -26,6 +27,7 @@ export const QueryResult = ({
     data,
     errorMessage,
     isDataLoading,
+    onDownload
 }: QueryReultProps) => {
 
     const columns: ColumnDef<string[]>[] = useMemo(() => data?.[0].map((col, colIndex) => ({
@@ -70,6 +72,10 @@ export const QueryResult = ({
         return colSizes
     }, [table.getState().columnSizingInfo, table.getState().columnSizing])
 
+    if (errorMessage) {
+        return <div className="query-result text-red-500">{errorMessage}</div>;
+    }
+
     if (isDataLoading) {
         return (
             <div className="query-result flex justify-center items-center mt-10">
@@ -95,12 +101,14 @@ export const QueryResult = ({
         );
     }
 
-    if (errorMessage) {
-        return <div className="query-result text-red-500">{errorMessage}</div>;
-    }
-
     return (
         <div>
+
+            <div>
+                <button onClick={onDownload} className="bg-blue-500 text-white p-2 rounded mb-4 cursor-pointer">
+                    Download Results
+                </button>
+            </div>
             <div className="query-result w-full overflow-x-auto scroll-smooth">
                 <table className="table-auto border-collapse border border-gray-300" style={{ ...columnSizeVars }}>
                     <thead>
