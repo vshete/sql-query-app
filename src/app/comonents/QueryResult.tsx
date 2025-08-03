@@ -116,7 +116,7 @@ export const QueryResult = ({
                                 {headerGroup.headers.map((header) => (
                                     <th
                                         key={header.id}
-                                        className="border border-gray-300 py-5 px-3 text-left min-w-[150px] whitespace-nowrap group relative overflow-hidden"
+                                        className="border border-gray-300 py-5 px-3 text-left whitespace-nowrap group relative overflow-hidden"
                                         style={{
                                             width: columnSizeVars[`--header-${header.id}-size`] ? `calc(var(--header-${header?.id}-size) * 1px)` : 'auto',
                                         }}
@@ -161,7 +161,7 @@ export const QueryResult = ({
                                 {row.getVisibleCells().map((cell) => (
                                     <td
                                         key={cell.id}
-                                        className="border border-gray-300 whitespace-nowrap min-w-[150px] p-3 overflow-hidden text-ellipsis"
+                                        className="border border-gray-300 whitespace-nowrap p-3 overflow-hidden text-ellipsis"
                                         style={{
                                             width: columnSizeVars[`--col-${cell.column.id}-size`] ? `calc(var(--col-${cell.column.id}-size) * 1px)` : 'auto',
                                         }}
