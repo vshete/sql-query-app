@@ -3,7 +3,15 @@ import { NextApiRequest, NextApiResponse } from "next";
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
     // Set the response headers for CSV
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader("Content-Disposition", "attachment; filename=categories.csv");
+    res.setHeader("Content-Disposition", "attachment; filename=response.csv");
+
+    let { page = 1, perPage = 10 } = req.body;
+
+    // Validate page/perPage as numbers and positive integers
+    page = Number(page);
+    perPage = Number(perPage);
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(perPage) || perPage < 1) perPage = 10;
 
     // Example CSV data
     const csvData = `orderID,customerID,employeeID,orderDate,requiredDate,shippedDate,shipVia,freight,shipName,shipAddress,shipCity,shipRegion,shipPostalCode,shipCountry
@@ -838,6 +846,43 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 11076,BONAP,4,1998-05-06 00:00:00.000,1998-06-03 00:00:00.000,NULL,2,38.28,Bon app',12 rue des Bouchers,Marseille,NULL,13008,France
 11077,RATTC,1,1998-05-06 00:00:00.000,1998-06-03 00:00:00.000,NULL,2,8.53,Rattlesnake Canyon Grocery,2817 Milton Dr.,Albuquerque,NM,87110,USA`
     // Send the CSV data
-    
-    res.status(200).send(csvData);
+
+    // Split CSV rows (preserving header)
+    const rows = csvData.trim().split("\n");
+    const header = rows[0];
+    const dataRows = rows.slice(1);
+
+    // Calculate pagination indices
+    const totalRows = dataRows.length;
+    const totalPages = Math.ceil(totalRows / perPage);
+    const currentPage = Math.min(page, totalPages);
+    const startIndex = (currentPage - 1) * perPage + 1; // +1 to skip header
+    const endIndex = startIndex + perPage;
+
+    if (page > totalPages) {
+        return res.status(500).json({
+            csv: "", // just header in csv format
+            currentPage,
+            totalPages,
+        });
+    }
+
+    // Slice page data
+    const pageDataRows = dataRows.slice(startIndex, endIndex);
+
+    // Construct CSV string: header + page of data rows
+    const pageCsv = [header, ...pageDataRows].join("\n");
+
+    // Set headers to trigger file download - with a filename that includes page info
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=response_${currentPage}.csv`
+    );
+
+    res.status(200).json({
+        csv: pageCsv,
+        currentPage,
+        totalPages,
+    });
 }

@@ -11,17 +11,18 @@ import { useFileDownload } from "../hooks/useFileDownload";
  * Root component of the application.
  */
 export const AppEntry = () => {
-    const { data, isDataLoading, errorMessage, executeQuery } = useFetchQueryResults();
+    const [currentPage, setCurrrentPage] = useState(1);
+    const { data, isDataLoading, errorMessage, executeQuery, totalPages } = useFetchQueryResults(currentPage);
     const { queries: predefinedQueries, isLoading: isQueriesLoading, error: queriesError } = useFetchPredefinedQueries(); // Use the new hook
     const [selectedQuery, setSelectedQuery] = useState<string>("");
     const {onDownload }= useFileDownload(data);
+
 
     const handleQuerySelect = (query: string) => {
         setSelectedQuery(query);
     };
 
     const handleSave = (query: string) => {
-        console.log(query);
         alert("Your query has been saved! [DEMO MESSAGE]");
     }
 
@@ -45,6 +46,8 @@ export const AppEntry = () => {
                     errorMessage={errorMessage}
                     isDataLoading={isDataLoading}
                     onDownload={onDownload}
+                    totalPages={totalPages}
+                    onPageChange={(pageNumber: number) => setCurrrentPage(pageNumber)}
                 />
             </main>
         </div>

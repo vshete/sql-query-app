@@ -15,6 +15,8 @@ export type QueryReultProps = {
     errorMessage?: string;
     isDataLoading?: boolean;
     onDownload?: () => void;
+    totalPages?: number;
+    onPageChange?: (page: number) => void;
 }
 
 /**
@@ -27,7 +29,9 @@ export const QueryResult = ({
     data,
     errorMessage,
     isDataLoading,
-    onDownload
+    onDownload,
+    totalPages,
+    onPageChange
 }: QueryReultProps) => {
 
     const columns: ColumnDef<string[]>[] = useMemo(() => data?.[0].map((col, colIndex) => ({
@@ -40,12 +44,17 @@ export const QueryResult = ({
     const tableData = useMemo(() => data?.slice(1), [data]) || [];
 
     const [sorting, setSorting] = React.useState<SortingState>([]);
+    const [currentPage, setCurrentPage] = React.useState(1);
 
     const table = useReactTable({
         data: tableData,
         columns,
         state: {
             sorting,
+            pagination: {
+                pageIndex: currentPage - 1, // Start at the first page
+                pageSize: 10, // Set a default page size
+            },
         },
         onSortingChange: setSorting,
         getCoreRowModel: getCoreRowModel(),
@@ -54,6 +63,22 @@ export const QueryResult = ({
         enableColumnResizing: true,
         columnResizeMode: "onChange",
     });
+
+    const goToPreviousPage = () => {
+        if (table.getCanPreviousPage()) {
+            onPageChange?.(table.getState().pagination.pageIndex);
+            table.previousPage();
+            setCurrentPage(table.getState().pagination.pageIndex);
+        }
+    }
+    
+    const goToNextPage = () => {
+        if (totalPages && currentPage < totalPages) {
+            onPageChange?.(table.getState().pagination.pageIndex + 2);
+            table.nextPage()
+            setCurrentPage(table.getState().pagination.pageIndex + 2);
+        }
+    }
 
     /**
    * Instead of calling `column.getSize()` on every render for every header
@@ -72,11 +97,11 @@ export const QueryResult = ({
         return colSizes
     }, [table.getState().columnSizingInfo, table.getState().columnSizing])
 
-    if (errorMessage) {
+    if (!data && errorMessage) {
         return <div className="query-result text-red-500">{errorMessage}</div>;
     }
 
-    if (isDataLoading) {
+    if (!data && isDataLoading) {
         return (
             <div className="query-result flex justify-center items-center mt-10">
                 <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
@@ -181,7 +206,7 @@ export const QueryResult = ({
             <div className="pagination-controls mt-4">
                 <button
                     className={`${table.getCanPreviousPage() ? 'cursor-pointer' : 'cursor-text'} cursor-pointer px-4 py-2 mr-5 bg-blue-200 rounded disabled:opacity-50`}
-                    onClick={() => table.previousPage()}
+                    onClick={() => goToPreviousPage()}
                     disabled={!table.getCanPreviousPage()}
                 >
                     Previous
@@ -190,12 +215,12 @@ export const QueryResult = ({
                     Page{" "}
                     <strong>
                         {table.getState().pagination.pageIndex + 1} of{" "}
-                        {table.getPageCount()}
+                        {totalPages}
                     </strong>
                 </span>
                 <button
                     className={`${table.getCanNextPage() ? 'cursor-pointer' : 'cursor-text'} px-4 py-2 bg-blue-200 rounded disabled:opacity-50`}
-                    onClick={() => table.nextPage()}
+                    onClick={() => goToNextPage()}
                     disabled={!table.getCanNextPage()}
                 >
                     Next
