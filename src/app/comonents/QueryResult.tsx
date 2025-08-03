@@ -126,9 +126,8 @@ export const QueryResult = ({
                                             className={`
                                                 ${header.column.getCanSort()
                                                     ? 'cursor-pointer select-none'
-                                                    : ''} group relative `
+                                                    : ''} group relative`
                                             }
-                                            onClick={header.column.getToggleSortingHandler()}
                                             title={
                                                 header.column.getCanSort()
                                                     ? header.column.getNextSortingOrder() === 'asc'
@@ -145,11 +144,22 @@ export const QueryResult = ({
                                                     header.column.columnDef.header,
                                                     header.getContext()
                                                 )}
+                                            <span onClick={header.column.getToggleSortingHandler()} className="ml-2">
+                                                {
+                                                    header.column.getCanSort()
+                                                    ? header.column.getNextSortingOrder() === 'asc'
+                                                        ? '⥮'
+                                                        : header.column.getNextSortingOrder() === 'desc'
+                                                            ? '⇑'
+                                                            : '⇓'
+                                                    : undefined
+                                                }
+                                            </span>
                                             <div
                                                 {...{
                                                     onDoubleClick: () => header.column.resetSize(),
-                                                    onMouseDown: header.getResizeHandler(),
-                                                    onTouchStart: header.getResizeHandler(),
+                                                    onMouseDown: header.getResizeHandler(document),
+                                                    onTouchStart: header.getResizeHandler(document),
                                                     className: `resizer absolute top-0 h-full right-0 w-[5px] cursor-col-resize select-none touch-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${header.column.getIsResizing() ? 'bg-blue-500 opacity-100' : 'bg-black bg-opacity-50'}`,
                                                 }}
                                             />
