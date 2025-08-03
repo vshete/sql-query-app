@@ -116,53 +116,37 @@ export const QueryResult = ({
                                 {headerGroup.headers.map((header) => (
                                     <th
                                         key={header.id}
-                                        className="border border-gray-300 py-5 px-3 text-left min-w-[150px] whitespace-nowrap cursor-pointer group relative overflow-hidden"
+                                        className="border border-gray-300 py-5 px-3 text-left min-w-[150px] whitespace-nowrap group relative overflow-hidden"
                                         style={{
                                             width: columnSizeVars[`--header-${header.id}-size`] ? `calc(var(--header-${header?.id}-size) * 1px)` : 'auto',
                                         }}
                                     >
-                                        <div
-                                            className={`
-                                                ${header.column.getCanSort()
-                                                    ? 'cursor-pointer select-none'
-                                                    : ''}`
-                                            }
-                                            title={
+
+                                        <span onClick={header.column.getToggleSortingHandler()} className="cursor-pointer">
+                                            {
                                                 header.column.getCanSort()
-                                                    ? header.column.getNextSortingOrder() === 'asc'
-                                                        ? 'Sort ascending'
-                                                        : header.column.getNextSortingOrder() === 'desc'
-                                                            ? 'Sort descending'
-                                                            : 'Clear sort'
-                                                    : undefined
-                                            }
-                                        >
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                    header.column.columnDef.header,
-                                                    header.getContext()
-                                                )}
-                                            <span onClick={header.column.getToggleSortingHandler()} className="ml-2">
-                                                {
-                                                    header.column.getCanSort()
                                                     ? header.column.getNextSortingOrder() === 'asc'
                                                         ? '⥮'
                                                         : header.column.getNextSortingOrder() === 'desc'
                                                             ? '⇑'
                                                             : '⇓'
                                                     : undefined
-                                                }
-                                            </span>
-                                            <div
-                                                {...{
-                                                    onDoubleClick: () => header.column.resetSize(),
-                                                    onMouseDown: header.getResizeHandler(),
-                                                    onTouchStart: header.getResizeHandler(),
-                                                    className: `resizer absolute top-0 h-full right-0 w-[5px] cursor-col-resize select-none touch-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${header.column.getIsResizing() ? 'bg-blue-500 opacity-100' : 'bg-black bg-opacity-50'}`,
-                                                }}
-                                            />
-                                        </div>
+                                            }
+                                        </span>
+                                        {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                header.column.columnDef.header,
+                                                header.getContext()
+                                            )}
+                                        <div
+                                            {...{
+                                                onDoubleClick: () => header.column.resetSize(),
+                                                onMouseDown: header.getResizeHandler(),
+                                                onTouchStart: header.getResizeHandler(),
+                                                className: `resizer absolute top-0 h-full right-0 w-[5px] cursor-col-resize select-none touch-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${header.column.getIsResizing() ? 'bg-blue-500 opacity-100' : 'bg-black bg-opacity-50'}`,
+                                            }}
+                                        />
                                     </th>
                                 ))}
                             </tr>
