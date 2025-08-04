@@ -4,8 +4,15 @@
  * @returns - A function to handle file download
  */
 export const useFileDownload = (data?: string[][]) => {
-    const onDownload = () => {
-        const csvData = data?.map(row => row.join(",")).join("\n");
+    const onDownload = async () => {
+        const downladResponse = await fetch("/api/post/download", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({}),
+        });;
+        const csvData = await downladResponse.text();
         // Download the data as csv
         if (!csvData) {
             alert("No data to download.");
