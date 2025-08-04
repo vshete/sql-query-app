@@ -857,7 +857,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const totalPages = Math.ceil(totalRows / perPage);
     const currentPage = Math.min(page, totalPages);
     const startIndex = (currentPage - 1) * perPage + 1; // +1 to skip header
-    const endIndex = startIndex + perPage - 1;
+    const endIndex = startIndex + perPage;
 
     if (page > totalPages) {
         return res.status(500).json({
@@ -888,6 +888,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         csv: pageCsv,
         currentPage,
         totalPages,
-        perPage
+        perPage,
+        resultsInThisPage: pageDataRows.length,
     });
 }

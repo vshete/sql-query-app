@@ -54,13 +54,13 @@ export const useFetchQueryResults = (currentPage: number) => {
         } finally {
             setIsDataLoading(false);
         }
-    }, [data, pagesFetched, totalPages]);
+    }, [data, pagesFetched]);
 
     useEffect(() => {
         if (pagesFetched > 0 && currentPage >= pagesFetched && pagesFetched < totalPages) {
             executeQuery("QUERY_DOES_NOT_MATTER_RIGHT_NOW", pagesFetched + 1);
         }
-    }, [currentPage, pagesFetched]);
+    }, [currentPage, pagesFetched, executeQuery, totalPages]);
 
     return { data, isDataLoading, errorMessage, executeQuery, totalPages};
 };

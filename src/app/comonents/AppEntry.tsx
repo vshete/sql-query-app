@@ -15,7 +15,7 @@ export const AppEntry = () => {
     const { data, isDataLoading, errorMessage, executeQuery, totalPages } = useFetchQueryResults(currentPage);
     const { queries: predefinedQueries, isLoading: isQueriesLoading, error: queriesError } = useFetchPredefinedQueries(); // Use the new hook
     const [selectedQuery, setSelectedQuery] = useState<string>("");
-    const {onDownload }= useFileDownload(data);
+    const { onDownload } = useFileDownload(data);
 
 
     const handleQuerySelect = (query: string) => {
@@ -23,14 +23,15 @@ export const AppEntry = () => {
     };
 
     const handleSave = (query: string) => {
+        console.log("Saving query:", query);
         alert("Your query has been saved! [DEMO MESSAGE]");
     }
 
     return (
         <div className="flex">
-            <QuerySidebar 
-                queries={predefinedQueries} 
-                onQuerySelect={(queryObj) => handleQuerySelect(queryObj.query)} 
+            <QuerySidebar
+                queries={predefinedQueries}
+                onQuerySelect={(queryObj) => handleQuerySelect(queryObj.query)}
             />
             <main className="w-3/4 flex-1 p-5 font-mono">
                 {isQueriesLoading && <p>Loading predefined queries...</p>}
@@ -47,7 +48,7 @@ export const AppEntry = () => {
                     isDataLoading={isDataLoading}
                     onDownload={onDownload}
                     totalPages={totalPages}
-                    onPageChange={(pageNumber: number) => setCurrrentPage(pageNumber)}
+                    onPageChange={(pageNumber: number) => setTimeout(() => setCurrrentPage(pageNumber), 200)}
                 />
             </main>
         </div>

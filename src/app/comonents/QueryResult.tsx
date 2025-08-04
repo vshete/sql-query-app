@@ -8,6 +8,7 @@ import {
     SortingState,
     flexRender,
 } from "@tanstack/react-table";
+import { TableRow } from "./TableRow";
 
 export type QueryReultProps = {
     /* A two-dimensional array representing the table */
@@ -25,7 +26,7 @@ export type QueryReultProps = {
  * @param {Array} props.data - The data to be displayed in the table
  * @returns {JSX.Element} - The rendered component
  */
-export const QueryResult = ({
+export const QueryResult = React.memo(({
     data,
     errorMessage,
     isDataLoading,
@@ -95,7 +96,7 @@ export const QueryResult = ({
             colSizes[`--col-${header.column.id}-size`] = header.column.getSize()
         }
         return colSizes
-    }, [table.getState().columnSizingInfo, table.getState().columnSizing])
+    }, [table])
 
     if (!data && errorMessage) {
         return <div className="query-result text-red-500">{errorMessage}</div>;
@@ -179,25 +180,7 @@ export const QueryResult = ({
                     </thead>
                     <tbody>
                         {table.getRowModel().rows.map((row) => (
-                            <tr
-                                key={row.id}
-                                className={row.index % 2 === 0 ? "bg-white" : "bg-gray-100"}
-                            >
-                                {row.getVisibleCells().map((cell) => (
-                                    <td
-                                        key={cell.id}
-                                        className="border border-gray-300 whitespace-nowrap p-3 overflow-hidden text-ellipsis"
-                                        style={{
-                                            width: columnSizeVars[`--col-${cell.column.id}-size`] ? `calc(var(--col-${cell.column.id}-size) * 1px)` : 'auto',
-                                        }}
-                                    >
-                                        {flexRender(
-                                            cell.column.columnDef.cell,
-                                            cell.getContext()
-                                        )}
-                                    </td>
-                                ))}
-                            </tr>
+                            <TableRow key={row.id} columnSizeVars={columnSizeVars} row={row} />
                         ))}
                     </tbody>
                 </table>
@@ -228,4 +211,6 @@ export const QueryResult = ({
             </div>
         </div>
     );
-};
+});
+
+QueryResult.displayName = "QueryResult";
