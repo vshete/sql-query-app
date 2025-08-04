@@ -205,9 +205,9 @@ export const QueryResult = ({
             {/* Pagination Controls */}
             <div className="pagination-controls mt-4">
                 <button
-                    className={`${table.getCanPreviousPage() ? 'cursor-pointer' : 'cursor-text'} cursor-pointer px-4 py-2 mr-5 bg-blue-200 rounded disabled:opacity-50`}
+                    className={`${currentPage === 1 ? 'cursor-text' : 'cursor-pointer'} cursor-pointer px-4 py-2 mr-5 bg-blue-200 rounded disabled:opacity-50`}
                     onClick={() => goToPreviousPage()}
-                    disabled={!table.getCanPreviousPage()}
+                    disabled={currentPage === 1}
                 >
                     Previous
                 </button>
@@ -219,9 +219,9 @@ export const QueryResult = ({
                     </strong>
                 </span>
                 <button
-                    className={`${table.getCanNextPage() ? 'cursor-pointer' : 'cursor-text'} px-4 py-2 bg-blue-200 rounded disabled:opacity-50`}
+                    className={`${!!totalPages && currentPage >= totalPages ? 'cursor-text' : 'cursor-pointer'} px-4 py-2 bg-blue-200 rounded disabled:opacity-50`}
                     onClick={() => goToNextPage()}
-                    disabled={!table.getCanNextPage()}
+                    disabled={!!totalPages && currentPage >= totalPages}
                 >
                     Next
                 </button>
