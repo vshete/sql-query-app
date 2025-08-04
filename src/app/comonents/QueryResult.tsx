@@ -96,7 +96,7 @@ export const QueryResult = React.memo(({
             colSizes[`--col-${header.column.id}-size`] = header.column.getSize()
         }
         return colSizes
-    }, [table])
+    }, [table.getState().columnSizingInfo, table.getState().columnSizing]);
 
     if (!data && errorMessage) {
         return <div className="query-result text-red-500">{errorMessage}</div>;
