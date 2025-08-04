@@ -857,7 +857,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const totalPages = Math.ceil(totalRows / perPage);
     const currentPage = Math.min(page, totalPages);
     const startIndex = (currentPage - 1) * perPage + 1; // +1 to skip header
-    const endIndex = startIndex + perPage;
+    const endIndex = startIndex + perPage - 1;
 
     if (page > totalPages) {
         return res.status(500).json({
@@ -868,10 +868,14 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     // Slice page data
-    const pageDataRows = dataRows.slice(startIndex, endIndex);
+    let pageDataRows = dataRows.slice(startIndex, endIndex);
+    
+    // Append headers if first page
+    if(page === 1) {
+        pageDataRows = [header, ...pageDataRows];
+    }
 
-    // Construct CSV string: header + page of data rows
-    const pageCsv = [header, ...pageDataRows].join("\n");
+    const pageCsv = pageDataRows.join("\n");
 
     // Set headers to trigger file download - with a filename that includes page info
     res.setHeader("Content-Type", "text/csv");
@@ -884,5 +888,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         csv: pageCsv,
         currentPage,
         totalPages,
+        perPage
     });
 }
