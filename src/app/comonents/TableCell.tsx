@@ -1,7 +1,7 @@
 import { Cell, flexRender } from "@tanstack/react-table"
 import React from "react";
 
-export type TableCellProps = {
+type TableCellProps = {
     cell: Cell<string[], unknown>,
     columnSizeVars: { [key: string]: number }
 }

@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 
-export type QueryBoxProps = {
+type QueryBoxProps = {
     onQueryExecute: (query: string) => void;
-    handleSave: (query: string) => void;
     isDisabled?: boolean;
     initialQuery?: string;
 }
@@ -11,7 +10,7 @@ export type QueryBoxProps = {
  * A component that can be used to enter SQL queries.
  * @returns JSX.Element
  */
-export const QueryBox = ({ onQueryExecute, handleSave, isDisabled, initialQuery = "" }: QueryBoxProps) => {
+export const QueryBox = ({ onQueryExecute, isDisabled, initialQuery = "" }: QueryBoxProps) => {
     const [query, setQuery] = useState(initialQuery);
 
     useEffect(() => {
@@ -19,16 +18,8 @@ export const QueryBox = ({ onQueryExecute, handleSave, isDisabled, initialQuery 
     }, [initialQuery]);
 
     const handleExecute = () => {
-        onQueryExecute(query);
+        if (query.trim()) onQueryExecute(query);
     };
-
-    const handleSaveInner = () => {
-        if (query.trim() === "") {
-            alert("Query cannot be empty.");
-            return;
-        }
-        handleSave(query);
-    }
 
     return (
         <div className="query-box w-full mb-4 font-mono">
@@ -41,25 +32,14 @@ export const QueryBox = ({ onQueryExecute, handleSave, isDisabled, initialQuery 
             />
             <button
                 onClick={handleExecute}
-                disabled={isDisabled}
+                disabled={isDisabled || !query.trim()}
                 className={`execute-button mt-3 p-2 cursor-pointer rounded-md ${
-                    isDisabled
+                    isDisabled || !query.trim()
                         ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                         : "bg-blue-500 text-white hover:bg-blue-600"
                 }`}
             >
                 Execute
-            </button>
-            <button
-                onClick={handleSaveInner}
-                disabled={isDisabled}
-                className={`execute-button mt-3 ml-3 p-2 cursor-pointer rounded-md ${
-                    isDisabled
-                        ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                        : "bg-blue-500 text-white hover:bg-blue-600"
-                }`}
-            >
-                Save Query
             </button>
         </div>
     );

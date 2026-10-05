@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
     useReactTable,
     getCoreRowModel,
@@ -10,10 +10,11 @@ import {
 } from "@tanstack/react-table";
 import { TableRow } from "./TableRow";
 
-export type QueryReultProps = {
+type QueryResultProps = {
     /* A two-dimensional array representing the table */
     data?: string[][];
     errorMessage?: string;
+    initialPage?: number;
     isDataLoading?: boolean;
     onDownload?: () => void;
     totalPages?: number;
@@ -30,12 +31,13 @@ export const QueryResult = React.memo(({
     data,
     errorMessage,
     isDataLoading,
+    initialPage,
     onDownload,
     totalPages,
     onPageChange
-}: QueryReultProps) => {
+}: QueryResultProps) => {
 
-    const columns: ColumnDef<string[]>[] = useMemo(() => data?.[0].map((col, colIndex) => ({
+    const columns: ColumnDef<string[]>[] = useMemo(() => data?.[0]?.map((col, colIndex) => ({
         accessorKey: colIndex.toString(),
         header: col,
         cell: (info) => info.getValue(),
@@ -57,7 +59,7 @@ export const QueryResult = React.memo(({
                 pageSize: 10, // Set a default page size
             },
         },
-        onSortingChange: setSorting,
+        onSortingChange: setSorting, // Ideally sorting should be on entire data but since we have paginated data, only the data fetched so far will be sorted
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getPaginationRowModel: getPaginationRowModel(), // Enable pagination
@@ -65,40 +67,39 @@ export const QueryResult = React.memo(({
         columnResizeMode: "onChange",
     });
 
+    useEffect(() => {
+        if (initialPage) {
+            setCurrentPage(initialPage);
+        }
+    }, [initialPage]);
+
     const goToPreviousPage = () => {
-        if (table.getCanPreviousPage()) {
-            onPageChange?.(table.getState().pagination.pageIndex);
-            table.previousPage();
-            setCurrentPage(table.getState().pagination.pageIndex);
+        if (currentPage > 1) {
+            onPageChange?.(currentPage - 1);
+            setCurrentPage(currentPage - 1);
         }
     }
     
     const goToNextPage = () => {
         if (totalPages && currentPage < totalPages) {
-            onPageChange?.(table.getState().pagination.pageIndex + 2);
-            table.nextPage()
-            setCurrentPage(table.getState().pagination.pageIndex + 2);
+            onPageChange?.(currentPage + 1);
+            setCurrentPage(currentPage + 1);
         }
     }
 
-    /**
-   * Instead of calling `column.getSize()` on every render for every header
-   * and especially every data cell (very expensive),
-   * we will calculate all column sizes at once at the root table level in a useMemo
-   * and pass the column sizes down as CSS variables to the <table> element.
-   */
+    const { columnSizing } = table.getState();
     const columnSizeVars = React.useMemo(() => {
-        const headers = table.getFlatHeaders()
-        const colSizes: { [key: string]: number } = {}
-        for (let i = 0; i < headers.length; i++) {
-            const header = headers[i]!
-            colSizes[`--header-${header.id}-size`] = header.getSize()
-            colSizes[`--col-${header.column.id}-size`] = header.column.getSize()
+        const colSizes: Record<string, number> = {};
+        for (const header of table.getFlatHeaders()) {
+            colSizes[`--header-${header.id}-size`] = header.getSize();
+            colSizes[`--col-${header.column.id}-size`] = header.column.getSize();
         }
-        return colSizes
-    }, [table.getState().columnSizingInfo, table.getState().columnSizing]);
+        return colSizes;
+        // TanStack keeps the table instance stable; sizing state invalidates cached widths.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [table, columnSizing]);
 
-    if (!data && errorMessage) {
+    if (errorMessage) {
         return <div className="query-result text-red-500">{errorMessage}</div>;
     }
 
@@ -148,6 +149,8 @@ export const QueryResult = React.memo(({
                                         }}
                                     >
 
+                                        {/* The data will be fetched in the order specified in the query by the user */}
+                                        {/* If the data is really to be sorted based on column, first the entire dataset should be fetched. Make that modification on this click */}
                                         <span onClick={header.column.getToggleSortingHandler()} className="cursor-pointer">
                                             {
                                                 header.column.getCanSort()

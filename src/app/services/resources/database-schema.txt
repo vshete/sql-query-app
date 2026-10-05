@@ -1,0 +1,54 @@
+Demo Sales Database (PostgreSQL)
+
+This is a demonstration schema. Only read-only SELECT queries are allowed.
+
+Table: customers
+- customer_id (varchar, primary key)
+- company_name (varchar)
+- contact_name (varchar)
+- city (varchar)
+- country (varchar)
+
+Table: orders
+- order_id (integer, primary key)
+- customer_id (varchar, foreign key -> customers.customer_id)
+- employee_id (integer, foreign key -> employees.employee_id)
+- order_date (date)
+- shipped_date (date, nullable)
+- freight (numeric)
+
+Table: products
+- product_id (integer, primary key)
+- product_name (varchar)
+- category_id (integer, foreign key -> categories.category_id)
+- unit_price (numeric)
+- units_in_stock (integer)
+- discontinued (boolean)
+
+Table: order_details
+- order_id (integer, primary key component, foreign key -> orders.order_id)
+- product_id (integer, primary key component, foreign key -> products.product_id)
+- unit_price (numeric)
+- quantity (integer)
+- discount (numeric)
+
+Table: employees
+- employee_id (integer, primary key)
+- first_name (varchar)
+- last_name (varchar)
+- title (varchar)
+- country (varchar)
+
+Table: categories
+- category_id (integer, primary key)
+- category_name (varchar)
+- description (text)
+
+Relationships:
+- orders.customer_id references customers.customer_id
+- orders.employee_id references employees.employee_id
+- order_details.order_id references orders.order_id
+- order_details.product_id references products.product_id
+- products.category_id references categories.category_id
+
+The mock database returns representative demo rows, not live database data.

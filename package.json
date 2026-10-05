@@ -3,25 +3,38 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "tsx server.ts",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "NODE_ENV=production tsx server.ts",
+    "lint": "eslint .",
+    "test:sql": "node --import tsx --test tests/sqlValidation.test.ts",
+    "test:stream": "node --import tsx --test tests/queryStreaming.test.ts",
+    "test:manual": "node --import tsx --test tests/manualQuery.test.ts"
   },
   "dependencies": {
+    "@langchain/core": "^1.2.14",
+    "@langchain/google-genai": "^2.3.2",
+    "@langchain/openai": "^1.6.2",
+    "@modelcontextprotocol/sdk": "^1.31.0",
     "@tailwindcss/postcss": "^4.1.11",
     "@tanstack/react-table": "^8.21.3",
+    "dt-sql-parser": "^4.5.1",
+    "langchain": "^1.5.15",
     "next": "15.4.5",
     "postcss": "^8.5.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "tailwindcss": "^4.1.11"
+    "tailwindcss": "^4.1.11",
+    "tsx": "^4.23.15",
+    "ws": "^8.22.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ws": "^8.18.2",
     "eslint": "^9",
     "eslint-config-next": "15.4.5",
     "typescript": "^5"

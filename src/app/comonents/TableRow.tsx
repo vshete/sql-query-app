@@ -2,7 +2,7 @@ import React from "react"
 import { TableCell } from "./TableCell"
 import { Cell, Row } from "@tanstack/react-table"
 
-export type TableRowProps = {
+type TableRowProps = {
     row: Row<string[]>,
     columnSizeVars: { [key: string]: number }
 }
