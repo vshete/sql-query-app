@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useAIQueryGeneration } from '@/app/hooks/useAIQueryGeneration';
 import styles from './queryAgent.module.css';
-import type { MockQueryResult } from '@/app/types/query.types';
+import type { DatabaseQueryResult } from '@/app/types/query.types';
 
 interface Props {
   onQueryGenerated: (query: string) => void;
@@ -21,7 +21,7 @@ const NaturalLanguageInput: React.FC<Props> = ({
   placeholder = "Describe what data you need... e.g., 'Show me all active users with their recent orders'",
 }) => {
   const [input, setInput] = useState('');
-  const [mockResult, setMockResult] = useState<MockQueryResult | null>(null);
+  const [queryResult, setQueryResult] = useState<DatabaseQueryResult | null>(null);
   const { generateQuery, streamedSQL, agentText, isGenerating, error } = useAIQueryGeneration();
 
   useEffect(() => { onGeneratingChange?.(isGenerating); }, [isGenerating, onGeneratingChange]);
@@ -35,10 +35,10 @@ const NaturalLanguageInput: React.FC<Props> = ({
     if (!input.trim()) return;
 
     try {
-      setMockResult(null);
+      setQueryResult(null);
       const result = await generateQuery(input, onQueryStreaming);
       onQueryGenerated(result.generatedSQL);
-      setMockResult(result.mockResult);
+      setQueryResult(result.queryResult);
       setInput('');
     } catch (err) {
       console.error('Error generating query:', err);
@@ -111,23 +111,23 @@ const NaturalLanguageInput: React.FC<Props> = ({
         </section>
       )}
 
-      {mockResult && (
+      {queryResult && (
         <section className={styles.mockResults} aria-live="polite">
           <div className={styles.mockResultsHeader}>
-            <strong>Mock database results</strong>
-            <span>{mockResult.rowCount} rows · {mockResult.scenario}</span>
+            <strong>PostgreSQL results</strong>
+            <span>{queryResult.rowCount} rows{queryResult.truncated ? " (limited)" : ""}</span>
           </div>
-          <p>{mockResult.message}</p>
-          {mockResult.columns.length > 0 && (
+          <p>{queryResult.message}</p>
+          {queryResult.columns.length > 0 && (
             <div className={styles.mockResultsTableWrap}>
               <table className={styles.mockResultsTable}>
                 <thead>
-                  <tr>{mockResult.columns.map((column) => <th key={column}>{column}</th>)}</tr>
+                  <tr>{queryResult.columns.map((column) => <th key={column}>{column}</th>)}</tr>
                 </thead>
                 <tbody>
-                  {mockResult.rows.map((row, rowIndex) => (
+                  {queryResult.rows.map((row, rowIndex) => (
                     <tr key={rowIndex}>
-                      {mockResult.columns.map((column) => (
+                      {queryResult.columns.map((column) => (
                         <td key={column}>{row[column] === null ? 'NULL' : String(row[column] ?? '')}</td>
                       ))}
                     </tr>

@@ -1,3 +1,4 @@
+import { getDatabasePool } from "@/app/services/database";
 import { getAgentConfig } from "@/app/services/agentConfig";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { runQueryAgent } from "@/app/services/queryAgent";
@@ -14,6 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    getDatabasePool();
     const { provider, apiKey, model } = getAgentConfig();
     const result = await runQueryAgent(request.trim(), provider, apiKey, model);
     return res.status(200).json(result);

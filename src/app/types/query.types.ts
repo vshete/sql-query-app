@@ -1,8 +1,8 @@
-export interface MockQueryResult {
+export interface DatabaseQueryResult {
   columns: string[];
   rows: Array<Record<string, string | number | boolean | null>>;
   rowCount: number;
-  scenario: string;
+  truncated: boolean;
   message: string;
 }
 
@@ -12,5 +12,5 @@ export interface QueryAgentResult {
   explanation: string;
   requiredTables: string[];
   warnings: string[];
-  mockResult: MockQueryResult;
+  queryResult: DatabaseQueryResult;
 }

@@ -1,6 +1,6 @@
-Demo Sales Database (PostgreSQL)
+Sales Database (PostgreSQL)
 
-This is a demonstration schema. Only read-only SELECT queries are allowed.
+Only read-only SELECT queries are allowed.
 
 Table: customers
 - customer_id (varchar, primary key)
@@ -51,4 +51,4 @@ Relationships:
 - order_details.product_id references products.product_id
 - products.category_id references categories.category_id
 
-The mock database returns representative demo rows, not live database data.
+Queries run against live PostgreSQL tables in the public schema.

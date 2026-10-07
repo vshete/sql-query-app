@@ -1,4 +1,5 @@
-import type { MockQueryResult, QueryAgentResult } from "../types/query.types";
+import type { DatabaseQueryResult, QueryAgentResult } from "../types/query.types";
+import { executeDatabaseQuery } from "./database";
 import { cleanAndValidateSql } from "./sqlValidation";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -12,7 +13,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-const SCHEMA_URI = "demo://database/schema";
+const SCHEMA_URI = "postgres://database/schema";
 
 
 function extractText(content: unknown): string {
@@ -43,131 +44,6 @@ function parseToolText(result: unknown): string {
 }
 
 
-function emptyResult(message: string, scenario = "empty-result"): MockQueryResult {
-  return { columns: [], rows: [], rowCount: 0, scenario, message };
-}
-
-function getMockDatabaseResponse(sql: string): MockQueryResult {
-  const normalizedSql = sql.toLowerCase();
-
-  if (normalizedSql.includes("mock_db_error")) {
-    return emptyResult("The mock database returned a simulated connection error.", "database-error");
-  }
-  if (/\b1\s*=\s*0\b|\bfalse\b|no_such_match/.test(normalizedSql)) {
-    return emptyResult("The query ran successfully but matched no rows.");
-  }
-
-  if (/\bfrom\s+["`]?products\b/.test(normalizedSql)) {
-    if (/\bcount\s*\(/.test(normalizedSql)) {
-      return {
-        columns: ["product_count"],
-        rows: [{ product_count: 77 }],
-        rowCount: 1,
-        scenario: "aggregate",
-        message: "Mock count of products.",
-      };
-    }
-    return {
-      columns: ["product_id", "product_name", "category_id", "unit_price", "units_in_stock", "discontinued"],
-      rows: [
-        { product_id: 1, product_name: "Chai", category_id: 1, unit_price: 18, units_in_stock: 39, discontinued: false },
-        { product_id: 2, product_name: "Chang", category_id: 1, unit_price: 19, units_in_stock: 17, discontinued: false },
-        { product_id: 3, product_name: "Aniseed Syrup", category_id: 2, unit_price: 10, units_in_stock: 13, discontinued: false },
-      ],
-      rowCount: 3,
-      scenario: "products",
-      message: "Representative product rows returned by the mock database.",
-    };
-  }
-
-  if (/\bfrom\s+["`]?orders\b/.test(normalizedSql)) {
-    if (/\bcount\s*\(/.test(normalizedSql) || /\bgroup\s+by\b/.test(normalizedSql)) {
-      return {
-        columns: ["country", "order_count", "total_freight"],
-        rows: [
-          { country: "USA", order_count: 122, total_freight: 1894.4 },
-          { country: "Germany", order_count: 122, total_freight: 1623.17 },
-          { country: "Brazil", order_count: 83, total_freight: 1270.92 },
-        ],
-        rowCount: 3,
-        scenario: "order-aggregate",
-        message: "Mock grouped order totals by customer country.",
-      };
-    }
-    return {
-      columns: ["order_id", "customer_id", "employee_id", "order_date", "freight"],
-      rows: [
-        { order_id: 10248, customer_id: "VINET", employee_id: 5, order_date: "1996-07-04", freight: 32.38 },
-        { order_id: 10249, customer_id: "TOMSP", employee_id: 6, order_date: "1996-07-05", freight: 11.61 },
-        { order_id: 10250, customer_id: "HANAR", employee_id: 4, order_date: "1996-07-08", freight: 65.83 },
-      ],
-      rowCount: 3,
-      scenario: "orders",
-      message: "Representative order rows returned by the mock database.",
-    };
-  }
-
-  if (/\bfrom\s+["`]?customers\b/.test(normalizedSql)) {
-    if (/\bcount\s*\(/.test(normalizedSql)) {
-      return {
-        columns: ["customer_count"],
-        rows: [{ customer_count: 91 }],
-        rowCount: 1,
-        scenario: "aggregate",
-        message: "Mock count of customers.",
-      };
-    }
-    return {
-      columns: ["customer_id", "company_name", "contact_name", "city", "country"],
-      rows: [
-        { customer_id: "ALFKI", company_name: "Alfreds Futterkiste", contact_name: "Maria Anders", city: "Berlin", country: "Germany" },
-        { customer_id: "ANATR", company_name: "Ana Trujillo Emparedados", contact_name: "Ana Trujillo", city: "Mexico City", country: "Mexico" },
-        { customer_id: "ANTON", company_name: "Antonio Moreno Taqueria", contact_name: "Antonio Moreno", city: "Mexico City", country: "Mexico" },
-      ],
-      rowCount: 3,
-      scenario: "customers",
-      message: "Representative customer rows returned by the mock database.",
-    };
-  }
-
-  if (/\bfrom\s+["`]?employees\b/.test(normalizedSql)) {
-    return {
-      columns: ["employee_id", "first_name", "last_name", "title", "country"],
-      rows: [
-        { employee_id: 1, first_name: "Nancy", last_name: "Davolio", title: "Sales Representative", country: "USA" },
-        { employee_id: 2, first_name: "Andrew", last_name: "Fuller", title: "Vice President Sales", country: "USA" },
-      ],
-      rowCount: 2,
-      scenario: "employees",
-      message: "Representative employee rows returned by the mock database.",
-    };
-  }
-
-  if (/\bfrom\s+["`]?categories\b/.test(normalizedSql)) {
-    return {
-      columns: ["category_id", "category_name", "description"],
-      rows: [
-        { category_id: 1, category_name: "Beverages", description: "Soft drinks, coffees, teas, beers, and ales" },
-        { category_id: 2, category_name: "Condiments", description: "Sweet and savory sauces, relishes, and seasonings" },
-      ],
-      rowCount: 2,
-      scenario: "categories",
-      message: "Representative category rows returned by the mock database.",
-    };
-  }
-
-  return {
-    columns: ["order_id", "product_id", "unit_price", "quantity", "discount"],
-    rows: [
-      { order_id: 10248, product_id: 11, unit_price: 14, quantity: 12, discount: 0 },
-      { order_id: 10248, product_id: 42, unit_price: 9.8, quantity: 10, discount: 0 },
-    ],
-    rowCount: 2,
-    scenario: "order-details",
-    message: "Representative order detail rows returned by the mock database.",
-  };
-}
-
 export type QueryAgentProvider = "gemini" | "openai";
 
 interface QueryAgentOptions {
@@ -182,7 +58,7 @@ interface QueryRequestContext {
   options: QueryAgentOptions;
   generatedSQL: string;
   requiredTables: string[];
-  mockResult?: MockQueryResult;
+  queryResult?: DatabaseQueryResult;
 }
 
 const requestContexts = new Map<string, QueryRequestContext>();
@@ -253,16 +129,19 @@ async function initializeMcpServer(): Promise<Client> {
   );
 
   mcpServer.registerTool(
-    "execute_mock_query",
+    "execute_query",
     {
-      description: "Execute a validated read-only query against the deterministic demo mock database; this never connects to a real database.",
+      description: "Execute a validated read-only query against PostgreSQL and return actual database rows.",
       inputSchema: { query: z.string(), requestId: z.string() },
     },
     async ({ query, requestId }) => {
       const context = getRequestContext(requestId);
       const validated = cleanAndValidateSql(query);
-      context.mockResult = getMockDatabaseResponse(validated.sql);
-      return { content: [{ type: "text", text: JSON.stringify(context.mockResult) }] };
+      if (!context.generatedSQL || validated.sql !== context.generatedSQL) {
+        throw new Error("Execute exactly the SQL returned by construct_sql.");
+      }
+      context.queryResult = await executeDatabaseQuery(validated.sql, context.options.signal);
+      return { content: [{ type: "text", text: JSON.stringify(context.queryResult) }] };
     },
   );
 
@@ -323,20 +202,20 @@ export async function runQueryAgent(
     const executeQueryTool = tool(
       async ({ query }) => {
         const start = performance.now();
-        console.debug("Executing mock query to fetch results: ", query);
+        console.debug("Executing PostgreSQL query: ", query);
         const result = await mcpClient.callTool({
-          name: "execute_mock_query",
+          name: "execute_query",
           arguments: { query, requestId },
         });
-        console.debug("Raw mock query result: ", result);
-        context.mockResult = JSON.parse(parseToolText(result)) as MockQueryResult;
+        console.debug("PostgreSQL query result: ", result);
+        context.queryResult = JSON.parse(parseToolText(result)) as DatabaseQueryResult;
         const end = performance.now();
-        console.debug("Mock query execution time: ", end - start);
-        return JSON.stringify(context.mockResult);
+        console.debug("PostgreSQL query execution time: ", end - start);
+        return JSON.stringify(context.queryResult);
       },
       {
-        name: "execute_mock_query",
-        description: "Run the generated read-only SQL using the mock database tool and return representative results.",
+        name: "execute_query",
+        description: "Run the generated read-only SQL against PostgreSQL and return actual results.",
         schema: z.object({ query: z.string() }),
       },
     );
@@ -344,7 +223,7 @@ export async function runQueryAgent(
     const agent = createAgent({
       model,
       tools: [constructSqlTool, executeQueryTool],
-      systemPrompt: "You are a SQL query agent. For each request, call construct_sql first, then call execute_mock_query with exactly the SQL it returned. Do not answer until both tools have been called. Never invent tool results.",
+      systemPrompt: "You are a SQL query agent. For each request, call construct_sql first, then call execute_query with exactly the SQL it returned. Do not answer until both tools have been called. Never invent tool results.",
     });
     
     const events = agent.streamEvents(
@@ -359,17 +238,17 @@ export async function runQueryAgent(
       }
     }
 
-    const { generatedSQL, requiredTables, mockResult } = context;
-    if (!generatedSQL || !mockResult) {
+    const { generatedSQL, requiredTables, queryResult } = context;
+    if (!generatedSQL || !queryResult) {
       throw new Error("The query agent did not complete both required tool calls.");
     }
     return {
       generatedSQL,
       confidence: 0.9,
-      explanation: "Generated using the MCP schema resource and executed against the mock database.",
+      explanation: "Generated using the MCP schema resource and executed against PostgreSQL.",
       requiredTables,
-      warnings: ["Results are demonstrations from a mock database; no live database was queried."],
-      mockResult,
+      warnings: queryResult.truncated ? ["Results are limited to the first 1,000 rows."] : [],
+      queryResult,
     };
   } finally {
     requestContexts.delete(requestId);
