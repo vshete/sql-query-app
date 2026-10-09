@@ -7,23 +7,8 @@ import { createAgent } from "langchain";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
 import { loadQueryPrompts, type QueryPrompts } from "./queryPrompts";
-import { initializeMcpServer, QueryAgentOptions, QueryRequestContext, requestContexts } from "./queryAgentMCP";
+import { extractText, initializeMcpServer, QueryAgentOptions, QueryRequestContext, requestContexts } from "./queryAgentMCP";
 
-
-
-function extractText(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((part) =>
-        typeof part === "object" && part !== null && "text" in part
-          ? String(part.text)
-          : "",
-      )
-      .join("");
-  }
-  return "";
-}
 
 function parseToolText(result: unknown): string {
   if (typeof result !== "object" || result === null || !("content" in result) || !Array.isArray(result.content)) {
