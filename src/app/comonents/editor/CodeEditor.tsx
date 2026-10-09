@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useId, useRef, useState } from "react";
 import { EditorView } from "@codemirror/view";
 import { sql, PostgreSQL } from "@codemirror/lang-sql";
 import { createEditorState } from "./codeEditorConfig";
@@ -10,6 +10,17 @@ import "./codeEditorTheme.css";
 export const CodeEditor = memo(function CodeEditor({ code, language }: { code: string; language: "sql" }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const editorId = useId();
+  const hasMoreLines = code.split("\n").length > 5;
+
+  useEffect(() => {
+    if (!code) setExpanded(false);
+  }, [code]);
+
+  useEffect(() => {
+    viewRef.current?.requestMeasure();
+  }, [expanded]);
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -36,5 +47,14 @@ export const CodeEditor = memo(function CodeEditor({ code, language }: { code: s
     });
   }, [code]);
 
-  return <div ref={hostRef} className="ce-editor-mount" aria-label={`Read-only ${language} output`} />;
+  return (
+    <div className="ce-editor-preview">
+      <div ref={hostRef} id={editorId} className={`ce-editor-mount${expanded ? " ce-editor-expanded" : ""}`} aria-label={`Read-only ${language} output`} />
+      {hasMoreLines && (
+        <button type="button" className="ce-editor-toggle" aria-expanded={expanded} aria-controls={editorId} onClick={() => setExpanded(value => !value)}>
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
+  );
 });

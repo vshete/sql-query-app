@@ -120,6 +120,13 @@ const NaturalLanguageInput: React.FC<Props> = ({
         </section>
       )}
 
+      {isGenerating && (
+        <div className={styles.generationStatus} role="status" aria-live="polite">
+          <span className={styles.generationSpinner} aria-hidden="true" />
+          <span>Generating response…</span>
+        </div>
+      )}
+
     </div>
   );
 };

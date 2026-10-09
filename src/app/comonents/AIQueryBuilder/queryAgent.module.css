@@ -158,9 +158,30 @@
   border-radius: 6px;
 }
 
-.sqlEditor :global(.cm-scroller) {
-  height: 240px;
-  max-height: 240px;
+.generationStatus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--agent-muted);
+  font-size: 14px;
+}
+
+.generationSpinner {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 2px solid var(--agent-border);
+  border-top-color: var(--agent-accent);
+  border-radius: 50%;
+  animation: generationSpin 0.8s linear infinite;
+}
+
+@keyframes generationSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .generationSpinner { animation: none; }
 }
 
 .markdown {
