@@ -3,15 +3,18 @@ import next from 'next';
 import { WebSocketServer, WebSocket } from 'ws';
 import { runQueryAgent } from './src/app/services/queryAgent';
 import { getAgentConfig } from './src/app/services/agentConfig';
+import { configureMockModelMode } from './src/app/services/mocks/mockMode';
 
 async function main() {
   const dev = process.env.NODE_ENV !== 'production';
+  configureMockModelMode(dev);
   const port = Number(process.env.PORT || 3000);
   const app = next({ dev, port });
   await app.prepare();
   const server = createServer(app.getRequestHandler());
   const wss = new WebSocketServer({ noServer: true, maxPayload: 16 * 1024 });
   const nextUpgrade = app.getUpgradeHandler();
+  
   server.on('upgrade', (req, socket, head) => {
     if (req.url?.split('?')[0] !== '/api/agent/stream') {
       void nextUpgrade(req, socket, head);
@@ -26,6 +29,7 @@ async function main() {
     } catch { socket.destroy(); return; }
     wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws));
   });
+
   wss.on('connection', (ws) => {
     const controller = new AbortController();
     let started = false;
@@ -33,7 +37,7 @@ async function main() {
       send({ type: 'error', error: 'Query generation timed out.' });
       controller.abort();
       ws.close();
-    }, 120_000);
+    }, 180_000);
     function send(event: unknown) {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
     }
