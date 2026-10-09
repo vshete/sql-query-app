@@ -1,6 +1,10 @@
+import { isMockModelEnabled } from './mocks/mockMode';
 import type { QueryAgentProvider } from './queryAgent';
 
 export function getAgentConfig() {
+  if (isMockModelEnabled()) {
+    return { provider: 'openai' as const, apiKey: '', model: 'mock-sql' };
+  }
   const provider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
   if (provider !== 'gemini' && provider !== 'openai') {
     throw new Error('AI_PROVIDER must be gemini or openai.');

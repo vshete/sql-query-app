@@ -8,7 +8,6 @@ export interface DatabaseQueryResult {
 
 export interface QueryAgentResult {
   generatedSQL: string;
-  confidence: number;
   explanation: string;
   requiredTables: string[];
   warnings: string[];

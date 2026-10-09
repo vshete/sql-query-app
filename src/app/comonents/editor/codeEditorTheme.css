@@ -1,0 +1,17 @@
+.ce-editor-mount {
+  --ce-color-surface: #ffffff;
+  --ce-color-surface-subtle: #f8fafc;
+  --ce-color-surface-active: #f1f5f9;
+  --ce-color-text: #1e293b;
+  --ce-color-text-muted: #64748b;
+  --ce-color-border: #cbd5e1;
+  --ce-color-border-subtle: #e2e8f0;
+  --ce-color-focus: #2563eb;
+  --ce-color-focus-ring: #1d4ed8;
+  --ce-color-selection: #dbeafe;
+  --ce-color-match: #dbeafe;
+  --ce-font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  --ce-radius-sm: 0.375rem;
+}

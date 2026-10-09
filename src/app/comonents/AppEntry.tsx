@@ -13,7 +13,6 @@ export const AppEntry = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const { data, isDataLoading, errorMessage, executeQuery, totalPages } = useFetchQueryResults(currentPage);
     const [isGeneratingQuery, setIsGeneratingQuery] = useState(false);
-    const [selectedQuery, setSelectedQuery] = useState<string>("");
     const { onDownload } = useFileDownload();
 
 
@@ -25,15 +24,12 @@ export const AppEntry = () => {
     return (
         <main className="w-full p-5 font-mono">
             <NaturalLanguageInput
-                onQueryGenerated={setSelectedQuery}
-                onQueryStreaming={setSelectedQuery}
                 onGeneratingChange={setIsGeneratingQuery}
                 isLoading={isDataLoading}
             />
             <QueryBox
                 onQueryExecute={onExecuteQueryWrapper}
                 isDisabled={isDataLoading || isGeneratingQuery}
-                initialQuery={selectedQuery}
             />
             <QueryResult
                 initialPage={currentPage === 1 ? currentPage : undefined}

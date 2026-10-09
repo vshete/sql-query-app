@@ -3,26 +3,23 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useAIQueryGeneration } from '@/app/hooks/useAIQueryGeneration';
 import styles from './queryAgent.module.css';
-import type { DatabaseQueryResult } from '@/app/types/query.types';
+import { CodeEditor } from '../editor/CodeEditor';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Props {
-  onQueryGenerated: (query: string) => void;
-  onQueryStreaming?: (query: string) => void;
   onGeneratingChange?: (generating: boolean) => void;
   isLoading?: boolean;
   placeholder?: string;
 }
 
 const NaturalLanguageInput: React.FC<Props> = ({
-  onQueryGenerated,
-  onQueryStreaming,
   onGeneratingChange,
   isLoading = false,
   placeholder = "Describe what data you need... e.g., 'Show me all active users with their recent orders'",
 }) => {
   const [input, setInput] = useState('');
-  const [queryResult, setQueryResult] = useState<DatabaseQueryResult | null>(null);
-  const { generateQuery, streamedSQL, agentText, isGenerating, error } = useAIQueryGeneration();
+  const { generateQuery, hasStarted, streamedSQL, agentText, isGenerating, error } = useAIQueryGeneration();
 
   useEffect(() => { onGeneratingChange?.(isGenerating); }, [isGenerating, onGeneratingChange]);
 
@@ -35,15 +32,12 @@ const NaturalLanguageInput: React.FC<Props> = ({
     if (!input.trim()) return;
 
     try {
-      setQueryResult(null);
-      const result = await generateQuery(input, onQueryStreaming);
-      onQueryGenerated(result.generatedSQL);
-      setQueryResult(result.queryResult);
+      await generateQuery(input);
       setInput('');
     } catch (err) {
       console.error('Error generating query:', err);
     }
-  }, [input, generateQuery, onQueryGenerated, onQueryStreaming]);
+  }, [input, generateQuery]);
 
   const handleSuggestionClick = useCallback((suggestion: string) => {
     setInput(suggestion);
@@ -97,45 +91,17 @@ const NaturalLanguageInput: React.FC<Props> = ({
         </div>
       </div>
 
-      {streamedSQL && (
+      {hasStarted && (
         <section className={styles.mockResults} aria-label="SQL generation preview">
           <strong>{isGenerating ? "Generating SQL…" : error ? "Incomplete SQL" : "Generated SQL"}</strong>
-          <pre className={styles.streamText}>{streamedSQL}</pre>
+          <div className={styles.sqlEditor}><CodeEditor code={streamedSQL} language="sql" /></div>
         </section>
       )}
 
       {agentText && (
         <section className={styles.mockResults} aria-label="Agent response">
-          <strong>Agent response</strong>
-          <pre className={styles.streamText}>{agentText}</pre>
-        </section>
-      )}
-
-      {queryResult && (
-        <section className={styles.mockResults} aria-live="polite">
-          <div className={styles.mockResultsHeader}>
-            <strong>PostgreSQL results</strong>
-            <span>{queryResult.rowCount} rows{queryResult.truncated ? " (limited)" : ""}</span>
-          </div>
-          <p>{queryResult.message}</p>
-          {queryResult.columns.length > 0 && (
-            <div className={styles.mockResultsTableWrap}>
-              <table className={styles.mockResultsTable}>
-                <thead>
-                  <tr>{queryResult.columns.map((column) => <th key={column}>{column}</th>)}</tr>
-                </thead>
-                <tbody>
-                  {queryResult.rows.map((row, rowIndex) => (
-                    <tr key={rowIndex}>
-                      {queryResult.columns.map((column) => (
-                        <td key={column}>{row[column] === null ? 'NULL' : String(row[column] ?? '')}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <strong>Query response</strong>
+          <div className={styles.markdown}><ReactMarkdown remarkPlugins={[remarkGfm]}>{agentText}</ReactMarkdown></div>
         </section>
       )}
 

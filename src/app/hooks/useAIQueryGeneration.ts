@@ -7,12 +7,14 @@ export function useAIQueryGeneration() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamedSQL, setStreamedSQL] = useState('');
   const [agentText, setAgentText] = useState('');
+  const [hasStarted, setHasStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const active = useRef<WebSocket | null>(null);
   useEffect(() => () => { active.current?.close(); }, []);
 
   const generateQuery = useCallback(async (naturalLanguage: string, onSQL?: (sql: string) => void) => {
     if (active.current) throw new Error('A query is already being generated.');
+    setHasStarted(true);
     setIsGenerating(true);
     setError(null);
     setStreamedSQL('');
@@ -24,6 +26,19 @@ export function useAIQueryGeneration() {
         active.current = socket;
         let settled = false;
         let sql = "";
+        let answer = "";
+        let frame: number | undefined;
+        function flushTokens() {
+          if (frame !== undefined) cancelAnimationFrame(frame);
+          frame = undefined;
+          setStreamedSQL(sql);
+          setAgentText(answer);
+          onSQL?.(sql);
+        }
+        function scheduleTokens() {
+          // Preserve every token, but update React at most once per paint.
+          frame ??= requestAnimationFrame(flushTokens);
+        }
         
         const timer = setTimeout(() => finish(new Error('Query generation timed out.')), 125_000);
         
@@ -31,6 +46,7 @@ export function useAIQueryGeneration() {
           if (settled) return;
           settled = true;
           clearTimeout(timer);
+          flushTokens();
           socket.close();
           if (err) reject(err);
           else resolve(result!);
@@ -42,16 +58,20 @@ export function useAIQueryGeneration() {
             const message = JSON.parse(event.data);
             if (settled) return;
             if (message.type === 'sql_start') {
-              sql = '';
-              setStreamedSQL('');
-              onSQL?.('');
+              // Request initialization already cleared the buffers. Never
+              // clear a visible stream in response to another start event.
             } else if (message.type === 'token' && typeof message.token === 'string') {
               sql += message.token;
-              setStreamedSQL(sql);
-              onSQL?.(sql);
+              scheduleTokens();
             } else if (message.type === 'agent_token' && typeof message.token === 'string') {
-              setAgentText((text) => text + message.token);
+              answer += message.token;
+              scheduleTokens();
             } else if (message.type === 'result') {
+              // Preserve streamed text and selection; normalization must not
+              // replace the document at the end of a successful stream.
+              if (!sql) {
+                sql = message.result.generatedSQL;
+              }
               finish(undefined, message.result);
             } else if (message.type === 'error') {
               finish(new Error(message.error));
@@ -71,6 +91,6 @@ export function useAIQueryGeneration() {
     }
   }, []);
 
-  return { streamedSQL, agentText, isGenerating, error, generateQuery };
+  return { hasStarted, streamedSQL, agentText, isGenerating, error, generateQuery };
 }
 

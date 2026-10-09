@@ -131,54 +131,6 @@
   padding-top: 16px;
 }
 
-.mockResultsHeader {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  color: var(--agent-ink);
-  font-size: 14px;
-}
-
-.mockResultsHeader span,
-.mockResults p {
-  color: var(--agent-muted);
-  font-size: 13px;
-}
-
-.mockResults p {
-  margin: 8px 0 12px;
-}
-
-.mockResultsTableWrap {
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-.mockResultsTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  text-align: left;
-}
-
-.mockResultsTable th,
-.mockResultsTable td {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--agent-border);
-  white-space: nowrap;
-}
-
-.mockResultsTable th {
-  color: var(--agent-muted);
-  font-weight: 600;
-}
-
-.mockResultsTable td {
-  color: var(--agent-ink);
-}
-
 @media (max-width: 560px) {
   .nlInputContainer {
     padding: 14px;
@@ -188,8 +140,47 @@
     flex-basis: 100%;
   }
 }
-.streamText {
-  white-space: pre-wrap;
+.sqlEditor {
+  --ce-color-surface: #f6faf8;
+  --ce-color-text: #183b36;
+  --ce-color-surface-subtle: #edf4f0;
+  --ce-color-border-subtle: #d4dfdb;
+  --ce-color-text-muted: #5b706b;
+  --ce-color-surface-active: #e7f1ec;
+  --ce-color-selection: #c8e4d9;
+  --ce-color-focus-ring: #087f68;
+  --ce-color-match: #c8e4d9;
+  --ce-color-focus: #087f68;
+  --ce-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid var(--agent-border);
+  border-radius: 6px;
+}
+
+.sqlEditor :global(.cm-scroller) {
+  height: 240px;
+  max-height: 240px;
+}
+
+.markdown {
+  line-height: 1.6;
   overflow-wrap: anywhere;
-  line-height: 1.5;
+}
+
+.markdown table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.markdown th,
+.markdown td {
+  padding: 8px 12px;
+  border: 1px solid var(--agent-border);
+}
+
+.markdown pre {
+  overflow-x: auto;
 }

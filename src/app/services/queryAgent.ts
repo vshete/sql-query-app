@@ -4,8 +4,9 @@ import { cleanAndValidateSql } from "./sqlValidation";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { ChatOpenAI } from "@langchain/openai";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { createQueryModel } from "./mocks/modelFactory";
+import { isMockModelEnabled } from "./mocks/mockMode";
 import { tool } from "@langchain/core/tools";
 import { createAgent } from "langchain";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -54,11 +55,14 @@ interface QueryAgentOptions {
 }
 
 interface QueryRequestContext {
-  model: ChatGoogleGenerativeAI | ChatOpenAI;
+  model: BaseChatModel;
   options: QueryAgentOptions;
   generatedSQL: string;
   requiredTables: string[];
   queryResult?: DatabaseQueryResult;
+  toolError?: Error;
+  sqlGeneration?: Promise<void>;
+  queryExecution?: Promise<DatabaseQueryResult>;
 }
 
 const requestContexts = new Map<string, QueryRequestContext>();
@@ -101,29 +105,39 @@ async function initializeMcpServer(): Promise<Client> {
     },
     async ({ request: naturalLanguage, requestId }) => {
       const context = getRequestContext(requestId);
-      const { model, options } = context;
-      const resource = await mcpClient.readResource({ uri: SCHEMA_URI });
-      const schema = resource.contents
-        .filter((content): content is typeof content & { text: string } => "text" in content)
-        .map((content) => content.text)
-        .join("\n");
-      options.onSqlStart?.();
-      let sqlText = "";
-      const stream = await model.stream([
-        {
-          role: "system",
-          content: "Generate one PostgreSQL SELECT query using only tables and columns in the provided schema. Never modify data or schema. Return only SQL, without markdown or explanation.",
-        },
-        { role: "user", content: `Schema:\n${schema}\n\nRequest: ${naturalLanguage}` },
-      ], { signal: options.signal, tags: ["sql-generation"] });
-      for await (const chunk of stream) {
-        const token = extractText(chunk.content);
-        sqlText += token;
-        if (token) options.onToken?.(token);
-      }
-      const validated = cleanAndValidateSql(sqlText);
-      context.generatedSQL = validated.sql;
-      context.requiredTables = validated.tables;
+      // Cache the in-flight operation too: models can emit duplicate calls in one turn.
+      // Keep failures cached so a repeated tool call cannot restart generation.
+      context.sqlGeneration ??= (async () => {
+        const { model, options } = context;
+        const resource = await mcpClient.readResource({ uri: SCHEMA_URI });
+        const schema = resource.contents
+          .filter((content): content is typeof content & { text: string } => "text" in content)
+          .map((content) => content.text)
+          .join("\n");
+        options.onSqlStart?.();
+        let sqlText = "";
+        const stream = await model.stream([
+          {
+            role: "system",
+            content: "Generate one PostgreSQL SELECT query using only tables and columns in the provided schema. Never modify data or schema. Return only SQL, without markdown or explanation.",
+          },
+          { role: "user", content: `Schema:\n${schema}\n\nRequest: ${naturalLanguage}` },
+        ], { signal: options.signal, tags: ["sql-generation"] });
+        for await (const chunk of stream) {
+          const token = extractText(chunk.content);
+          sqlText += token;
+          if (token) options.onToken?.(token);
+        }
+        const validated = cleanAndValidateSql(sqlText);
+        context.generatedSQL = validated.sql;
+        context.requiredTables = validated.tables;
+        console.debug("Generated SQL:", validated.sql);
+        console.debug("Generated requird tables", validated.tables)
+      })().catch((error: unknown) => {
+        context.toolError = error instanceof Error ? error : new Error(String(error));
+        throw context.toolError;
+      });
+      await context.sqlGeneration;
       return { content: [{ type: "text", text: JSON.stringify({ sql: context.generatedSQL, tables: context.requiredTables }) }] };
     },
   );
@@ -131,7 +145,7 @@ async function initializeMcpServer(): Promise<Client> {
   mcpServer.registerTool(
     "execute_query",
     {
-      description: "Execute a validated read-only query against PostgreSQL and return actual database rows.",
+      description: "Execute a validated read-only query against PostgreSQL and return actual database rows. No need to make call to the AI model. Return the resuts as JSON. Do not invent results.",
       inputSchema: { query: z.string(), requestId: z.string() },
     },
     async ({ query, requestId }) => {
@@ -140,7 +154,12 @@ async function initializeMcpServer(): Promise<Client> {
       if (!context.generatedSQL || validated.sql !== context.generatedSQL) {
         throw new Error("Execute exactly the SQL returned by construct_sql.");
       }
-      context.queryResult = await executeDatabaseQuery(validated.sql, context.options.signal);
+      console.debug("Executing SQL:", validated.sql);
+      context.queryExecution ??= executeDatabaseQuery(validated.sql, context.options.signal).catch((error: unknown) => {
+        context.toolError = error instanceof Error ? error : new Error(String(error));
+        throw context.toolError;
+      });
+      context.queryResult = await context.queryExecution;
       return { content: [{ type: "text", text: JSON.stringify(context.queryResult) }] };
     },
   );
@@ -171,9 +190,8 @@ export async function runQueryAgent(
   modelName: string,
   options: QueryAgentOptions = {},
 ): Promise<QueryAgentResult> {
-  const model = provider === "gemini"
-    ? new ChatGoogleGenerativeAI({ apiKey, model: modelName, temperature: 0, streaming: true })
-    : new ChatOpenAI({ apiKey, model: modelName, temperature: 0, streaming: true });
+  const mockModel = isMockModelEnabled();
+  const model = createQueryModel({ provider, apiKey, modelName, mockModel, request });
   const mcpClient = await getMcpClient();
   const requestId = randomUUID();
   const context: QueryRequestContext = {
@@ -215,7 +233,7 @@ export async function runQueryAgent(
       },
       {
         name: "execute_query",
-        description: "Run the generated read-only SQL against PostgreSQL and return actual results.",
+        description: "Run the generated read-only SQL against PostgreSQL and return actual results. Do not cut the resutls short or invent them. Return up to 100 rows. DO NOT DECIDE to reduce the number of rows if they are less than 100.",
         schema: z.object({ query: z.string() }),
       },
     );
@@ -223,15 +241,14 @@ export async function runQueryAgent(
     const agent = createAgent({
       model,
       tools: [constructSqlTool, executeQueryTool],
-      systemPrompt: "You are a SQL query agent. For each request, call construct_sql first, then call execute_query with exactly the SQL it returned. Do not answer until both tools have been called. Never invent tool results.",
+      systemPrompt: "You are a SQL query agent. Use construct_sql to generate SQL for the user's request and execute_query to retrieve the table results using exactly the generated SQL. Complete both tools before answering. Never invent SQL or results. Only these two tools are available. You are not supposed to call any tool more than once. Only one call per tool.",
     });
-    
     const events = agent.streamEvents(
       { messages: [{ role: "user", content: request }] },
       { version: "v2", signal: options.signal },
     );
     for await (const event of events) {
-      // SQL has its own channel; agent text must not be appended to the SQL editor.
+      // SQL streams separately so agent text never enters the SQL editor.
       if (event.event === "on_chat_model_stream" && !event.tags?.includes("sql-generation")) {
         const token = extractText(event.data.chunk?.content);
         if (token) options.onAgentToken?.(token);
@@ -242,10 +259,12 @@ export async function runQueryAgent(
     if (!generatedSQL || !queryResult) {
       throw new Error("The query agent did not complete both required tool calls.");
     }
+
     return {
       generatedSQL,
-      confidence: 0.9,
-      explanation: "Generated using the MCP schema resource and executed against PostgreSQL.",
+      explanation: mockModel
+        ? "Generated using a mock model and executed against PostgreSQL."
+        : "Generated using the MCP schema resource and executed against PostgreSQL.",
       requiredTables,
       warnings: queryResult.truncated ? ["Results are limited to the first 1,000 rows."] : [],
       queryResult,
