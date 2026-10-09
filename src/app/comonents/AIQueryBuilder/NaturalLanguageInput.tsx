@@ -91,6 +91,21 @@ const NaturalLanguageInput: React.FC<Props> = ({
         </div>
       </div>
 
+       <div className={styles.suggestionsSection}>
+        <p className={styles.suggestionsLabel}>Quick suggestions:</p>
+        <div className={styles.suggestionsList}>
+          {quickSuggestions.map((suggestion, index) => (
+            <button
+              key={index}
+              className={styles.suggestionChip}
+              onClick={() => handleSuggestionClick(suggestion)}
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {hasStarted && (
         <section className={styles.mockResults} aria-label="SQL generation preview">
           <strong>{isGenerating ? "Generating SQL…" : error ? "Incomplete SQL" : "Generated SQL"}</strong>
@@ -105,20 +120,6 @@ const NaturalLanguageInput: React.FC<Props> = ({
         </section>
       )}
 
-      <div className={styles.suggestionsSection}>
-        <p className={styles.suggestionsLabel}>Quick suggestions:</p>
-        <div className={styles.suggestionsList}>
-          {quickSuggestions.map((suggestion, index) => (
-            <button
-              key={index}
-              className={styles.suggestionChip}
-              onClick={() => handleSuggestionClick(suggestion)}
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };

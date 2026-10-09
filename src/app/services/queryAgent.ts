@@ -13,6 +13,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { loadQueryPrompts, formatSqlRequest, type QueryPrompts } from "./queryPrompts";
 
 const SCHEMA_URI = "postgres://database/schema";
 
@@ -56,6 +57,7 @@ interface QueryAgentOptions {
 
 interface QueryRequestContext {
   model: BaseChatModel;
+  prompts: QueryPrompts;
   options: QueryAgentOptions;
   generatedSQL: string;
   requiredTables: string[];
@@ -74,7 +76,7 @@ function getRequestContext(requestId: string): QueryRequestContext {
   return context;
 }
 
-async function initializeMcpServer(): Promise<Client> {
+async function initializeMcpServer(prompts: QueryPrompts): Promise<Client> {
   const mcpServer = new McpServer({ name: "query-app-demo", version: "1.0.0" });
   const mcpClient = new Client({ name: "query-app-agent", version: "1.0.0" });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -100,7 +102,7 @@ async function initializeMcpServer(): Promise<Client> {
   mcpServer.registerTool(
     "construct_sql",
     {
-      description: "Read the database-schema MCP resource and construct one read-only SQL query for the user's request.",
+      description: prompts.mcpConstructSql,
       inputSchema: { request: z.string(), requestId: z.string() },
     },
     async ({ request: naturalLanguage, requestId }) => {
@@ -108,7 +110,7 @@ async function initializeMcpServer(): Promise<Client> {
       // Cache the in-flight operation too: models can emit duplicate calls in one turn.
       // Keep failures cached so a repeated tool call cannot restart generation.
       context.sqlGeneration ??= (async () => {
-        const { model, options } = context;
+        const { model, options, prompts } = context;
         const resource = await mcpClient.readResource({ uri: SCHEMA_URI });
         const schema = resource.contents
           .filter((content): content is typeof content & { text: string } => "text" in content)
@@ -119,9 +121,9 @@ async function initializeMcpServer(): Promise<Client> {
         const stream = await model.stream([
           {
             role: "system",
-            content: "Generate one PostgreSQL SELECT query using only tables and columns in the provided schema. Never modify data or schema. Return only SQL, without markdown or explanation.",
+            content: prompts.sqlGeneration,
           },
-          { role: "user", content: `Schema:\n${schema}\n\nRequest: ${naturalLanguage}` },
+          { role: "user", content: formatSqlRequest(prompts.sqlRequest, schema, naturalLanguage) },
         ], { signal: options.signal, tags: ["sql-generation"] });
         for await (const chunk of stream) {
           const token = extractText(chunk.content);
@@ -145,7 +147,7 @@ async function initializeMcpServer(): Promise<Client> {
   mcpServer.registerTool(
     "execute_query",
     {
-      description: "Execute a validated read-only query against PostgreSQL and return actual database rows. No need to make call to the AI model. Return the resuts as JSON. Do not invent results.",
+      description: prompts.mcpExecuteQuery,
       inputSchema: { query: z.string(), requestId: z.string() },
     },
     async ({ query, requestId }) => {
@@ -174,9 +176,9 @@ async function initializeMcpServer(): Promise<Client> {
   }
 }
 
-function getMcpClient(): Promise<Client> {
+function getMcpClient(prompts: QueryPrompts): Promise<Client> {
   // Share initialization across concurrent requests; allow a retry if it fails.
-  mcpInitialization ??= initializeMcpServer().catch((error) => {
+  mcpInitialization ??= initializeMcpServer(prompts).catch((error) => {
     mcpInitialization = undefined;
     throw error;
   });
@@ -192,10 +194,11 @@ export async function runQueryAgent(
 ): Promise<QueryAgentResult> {
   const mockModel = isMockModelEnabled();
   const model = createQueryModel({ provider, apiKey, modelName, mockModel, request });
-  const mcpClient = await getMcpClient();
+  const prompts = await loadQueryPrompts();
+  const mcpClient = await getMcpClient(prompts);
   const requestId = randomUUID();
   const context: QueryRequestContext = {
-    model, options, generatedSQL: "", requiredTables: [],
+    model, prompts, options, generatedSQL: "", requiredTables: [],
   };
   requestContexts.set(requestId, context);
 
@@ -212,7 +215,7 @@ export async function runQueryAgent(
       },
       {
         name: "construct_sql",
-        description: "Create a safe SQL SELECT from the user's request using the database schema resource.",
+        description: prompts.constructSql,
         schema: z.object({ request: z.string() }),
       },
     );
@@ -233,7 +236,7 @@ export async function runQueryAgent(
       },
       {
         name: "execute_query",
-        description: "Run the generated read-only SQL against PostgreSQL and return actual results. Do not cut the resutls short or invent them. Return up to 100 rows. DO NOT DECIDE to reduce the number of rows if they are less than 100.",
+        description: prompts.executeQuery,
         schema: z.object({ query: z.string() }),
       },
     );
@@ -241,7 +244,7 @@ export async function runQueryAgent(
     const agent = createAgent({
       model,
       tools: [constructSqlTool, executeQueryTool],
-      systemPrompt: "You are a SQL query agent. Use construct_sql to generate SQL for the user's request and execute_query to retrieve the table results using exactly the generated SQL. Complete both tools before answering. Never invent SQL or results. Only these two tools are available. You are not supposed to call any tool more than once. Only one call per tool.",
+      systemPrompt: prompts.queryAgent,
     });
     const events = agent.streamEvents(
       { messages: [{ role: "user", content: request }] },
