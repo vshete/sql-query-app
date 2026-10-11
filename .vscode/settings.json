@@ -1,0 +1,34 @@
+{
+  // Set Prettier as the default formatter for Next.js web file types
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // Auto-format files when you save them
+  "editor.formatOnSave": true,
+
+  // Run ESLint code fixes automatically when saving files
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // (Optional) Fixes ambiguous Next.js tab titles like page.tsx or layout.tsx
+  "workbench.editor.customLabels.enabled": true,
+  "workbench.editor.customLabels.patterns": {
+    "**/app/**/page.tsx": "${dirname}/page.tsx",
+    "**/app/**/layout.tsx": "${dirname}/layout.tsx"
+  }
+}

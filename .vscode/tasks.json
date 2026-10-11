@@ -1,0 +1,56 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Test: All tests",
+      "type": "process",
+      "command": "node",
+      "args": [
+        "--import",
+        "tsx",
+        "--test",
+        "${workspaceFolder}/tests/database.test.ts",
+        "${workspaceFolder}/tests/databaseSchema.test.ts",
+        "${workspaceFolder}/tests/manualQuery.test.ts",
+        "${workspaceFolder}/tests/mockModel.test.ts",
+        "${workspaceFolder}/tests/queryStreaming.test.ts",
+        "${workspaceFolder}/tests/sqlValidation.test.ts"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Test: Current file",
+      "type": "process",
+      "command": "node",
+      "args": [
+        "--import",
+        "tsx",
+        "--test",
+        "${file}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      }
+    }
+  ]
+}
