@@ -48,10 +48,10 @@ export function QueryPrompt({
         </span>
         <div>
           <label id={titleId} htmlFor={id} className={styles.label}>
-            What data do you need?
+            Ask your database
           </label>
           <p id={descriptionId} className={styles.panelDescription}>
-            Ask in plain English to generate and run a SQL query.
+            Ask a question or follow up on an earlier answer.
           </p>
         </div>
         <span className={styles.aiBadge}>AI ASSIST</span>
@@ -96,9 +96,7 @@ export function QueryPrompt({
         </div>
       )}
       <div className={styles.promptActions}>
-        <span className={styles.shortcutHint}>
-          Ctrl / ⌘ + Enter to generate
-        </span>
+        <span className={styles.shortcutHint}>Ctrl / ⌘ + Enter to send</span>
         <button
           type="button"
           className={styles.generateBtn}
@@ -106,7 +104,7 @@ export function QueryPrompt({
           disabled={!canSubmit}
         >
           <WorkspaceIcon name="sparkles" />
-          {isGenerating ? "Generating…" : "Generate & run SQL"}
+          {isGenerating ? "Generating…" : "Send message"}
         </button>
         {input && (
           <button

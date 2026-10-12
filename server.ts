@@ -1,3 +1,4 @@
+import { parseQueryHistory } from "./src/app/services/queryConversation";
 import next from "next";
 import { createServer } from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
@@ -74,6 +75,7 @@ async function main() {
         ) {
           throw new Error("A request of 1–10000 characters is required.");
         }
+        const history = parseQueryHistory(payload.history);
         const { database } = getDatabaseConnection(
           connectionIdFromCookie(req.headers.cookie),
         );
@@ -84,6 +86,8 @@ async function main() {
           apiKey,
           model,
           {
+            history,
+            summarizeResults: true,
             database,
             signal: controller.signal,
             onSqlStart: () => send({ type: "sql_start" }),

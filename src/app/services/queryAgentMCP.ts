@@ -1,16 +1,23 @@
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Sequelize } from "sequelize";
 import { z } from "zod";
-import type { DatabaseQueryResult } from "../types/query.types";
+import type {
+  DatabaseQueryResult,
+  QueryChatMessage,
+} from "../types/query.types";
 import { executeDatabaseQuery } from "./database";
 import { getDatabaseSchema } from "./databaseSchema";
+import { appendQueryHistory } from "./queryConversation";
 import { formatSqlRequest, type QueryPrompts } from "./queryPrompts";
 import { cleanAndValidateSql } from "./sqlValidation";
 
 export interface QueryAgentOptions {
+  history?: QueryChatMessage[];
+  summarizeResults?: boolean;
   onToken?: (token: string) => void;
   onAgentToken?: (token: string) => void;
   onSqlStart?: () => void;
@@ -30,6 +37,7 @@ export interface QueryRequestContext {
   toolError?: Error;
   sqlGeneration?: Promise<void>;
   queryExecution?: Promise<DatabaseQueryResult>;
+  resultSummary?: Promise<string>;
 }
 
 export const requestContexts = new Map<string, QueryRequestContext>();
@@ -93,6 +101,11 @@ export async function initializeMcpServer(
               role: "system",
               content: prompts.sqlGeneration,
             },
+            ...(options.history ?? []).map((message) =>
+              message.role === "user"
+                ? new HumanMessage(message.content)
+                : new AIMessage(message.content),
+            ),
             {
               role: "user",
               content: formatSqlRequest(
@@ -161,6 +174,63 @@ export async function initializeMcpServer(
       context.queryResult = await context.queryExecution;
       return {
         content: [{ type: "text", text: JSON.stringify(context.queryResult) }],
+      };
+    },
+  );
+
+  mcpServer.registerTool(
+    "summarize_results",
+    {
+      description: prompts.mcpSummarizeResults,
+      inputSchema: { request: z.string(), requestId: z.string() },
+    },
+    async ({ request, requestId }) => {
+      const context = getRequestContext(requestId);
+      if (!context.generatedSQL || !context.queryResult) {
+        throw new Error("Execute the generated query before summarizing results.");
+      }
+      context.resultSummary ??= (async () => {
+        const { model, options, prompts, queryResult } = context;
+        const answerMessages = appendQueryHistory([], request, {
+          generatedSQL: context.generatedSQL,
+          explanation: "",
+          requiredTables: context.requiredTables,
+          warnings: [],
+          queryResult: queryResult!,
+        });
+        const stream = await model.stream(
+          [
+            { role: "system", content: prompts.resultSummary },
+            ...(options.history ?? []).map((message) =>
+              message.role === "user"
+                ? new HumanMessage(message.content)
+                : new AIMessage(message.content),
+            ),
+            new HumanMessage(
+              JSON.stringify({
+                request,
+                executedResult: JSON.parse(answerMessages.at(-1)!.content),
+              }),
+            ),
+          ],
+          { signal: options.signal, tags: ["result-summary"] },
+        );
+        let explanation = "";
+        options.onAgentToken?.("\n\n");
+        for await (const chunk of stream) {
+          const token = extractText(chunk.content);
+          explanation += token;
+          if (token) options.onAgentToken?.(token);
+        }
+        return explanation.trim();
+      })();
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ explanation: await context.resultSummary }),
+          },
+        ],
       };
     },
   );

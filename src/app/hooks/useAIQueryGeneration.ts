@@ -1,19 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { QueryAgentResult } from "../types/query.types";
+import type { QueryAgentResult, QueryChatMessage } from "../types/query.types";
+import { appendQueryHistory } from "../services/queryConversation";
 import { MAX_REQUEST_LENGTH, streamQuery } from "../services/queryStream";
 
-interface GenerationState {
-  hasStarted: boolean;
-  isGenerating: boolean;
+export interface QueryTurn {
+  request: string;
   streamedSQL: string;
   agentText: string;
   error: string | null;
   result?: QueryAgentResult;
 }
 
+interface GenerationState extends QueryTurn {
+  previousTurns: QueryTurn[];
+  hasStarted: boolean;
+  isGenerating: boolean;
+}
+
 const idle: GenerationState = {
+  request: "",
+  previousTurns: [],
   hasStarted: false,
   isGenerating: false,
   streamedSQL: "",
@@ -23,6 +31,7 @@ const idle: GenerationState = {
 
 export function useAIQueryGeneration() {
   const [state, setState] = useState(idle);
+  const history = useRef<QueryChatMessage[]>([]);
   const active = useRef<AbortController | null>(null);
 
   useEffect(
@@ -41,17 +50,37 @@ export function useAIQueryGeneration() {
     if (active.current) throw new Error("A query is already being generated.");
     const controller = new AbortController();
     active.current = controller;
-    setState({ ...idle, hasStarted: true, isGenerating: true });
+    setState((previous) => ({
+      ...idle,
+      request,
+      hasStarted: true,
+      isGenerating: true,
+      previousTurns: previous.hasStarted
+        ? [
+            ...previous.previousTurns,
+            {
+              request: previous.request,
+              streamedSQL: previous.streamedSQL,
+              agentText: previous.agentText,
+              error: previous.error,
+              result: previous.result,
+            },
+          ]
+        : previous.previousTurns,
+    }));
     try {
       const result = await streamQuery(request, {
+        history: history.current,
         signal: controller.signal,
         onUpdate: (streamedSQL, agentText) => {
           if (active.current === controller)
             setState((previous) => ({ ...previous, streamedSQL, agentText }));
         },
       });
-      if (active.current === controller)
+      if (active.current === controller) {
+        history.current = appendQueryHistory(history.current, request, result);
         setState((previous) => ({ ...previous, result }));
+      }
       return result;
     } catch (error: unknown) {
       if (active.current === controller)
@@ -73,6 +102,7 @@ export function useAIQueryGeneration() {
     const controller = active.current;
     active.current = null;
     controller?.abort();
+    history.current = [];
     setState(idle);
   }, []);
 

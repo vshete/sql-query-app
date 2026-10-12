@@ -1,4 +1,4 @@
-import type { QueryAgentResult } from "../types/query.types";
+import type { QueryAgentResult, QueryChatMessage } from "../types/query.types";
 import {
   AGENT_TIMEOUT_MS,
   MAX_STREAM_TEXT_LENGTH,
@@ -10,6 +10,7 @@ export { MAX_REQUEST_LENGTH } from "../types/queryProtocol";
 const STREAM_TIMEOUT_MS = AGENT_TIMEOUT_MS + 5_000;
 
 interface StreamOptions {
+  history?: QueryChatMessage[];
   signal: AbortSignal;
   onUpdate: (sql: string, answer: string) => void;
 }
@@ -17,7 +18,7 @@ interface StreamOptions {
 /** Own the socket, timer and paint callback together, including connecting/unmount cleanup. */
 export function streamQuery(
   request: string,
-  { signal, onUpdate }: StreamOptions,
+  { signal, onUpdate, history }: StreamOptions,
 ): Promise<QueryAgentResult> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
@@ -64,7 +65,9 @@ export function streamQuery(
 
     socket.onopen = () => {
       try {
-        socket.send(JSON.stringify({ request }));
+        socket.send(
+          JSON.stringify({ request, ...(history?.length ? { history } : {}) }),
+        );
       } catch {
         finish({ error: new Error("Could not send the query request.") });
       }

@@ -4,14 +4,15 @@ import { FakeListChatModel, FakeStreamingChatModel } from '@langchain/core/utils
 
 export const MOCK_SQL = 'SELECT customer_id, company_name, country FROM customers ORDER BY customer_id LIMIT 25;';
 export const MOCK_SQL_CHUNK_DELAY_MS = 35;
+export const MOCK_SUMMARY = 'This is a dummy summary of the tabulated query results. Review the table for the returned customer records.';
 
-// Unbound calls generate SQL; bound calls return model responses containing tool calls.
+// Unbound calls generate SQL, then a dummy summary; bound calls return tool calls.
 // LangChain remains responsible for dispatching tools and advancing the agent.
 export class MockQueryChatModel extends FakeListChatModel {
   constructor(private readonly request: string) {
     // FakeListChatModel streams one character per chunk; pace those chunks to
     // make SQL generation visibly progressive (about three seconds in total).
-    super({ responses: [MOCK_SQL], sleep: MOCK_SQL_CHUNK_DELAY_MS });
+    super({ responses: [MOCK_SQL, MOCK_SUMMARY], sleep: MOCK_SQL_CHUNK_DELAY_MS });
   }
 
   override bindTools(tools: Parameters<FakeListChatModel['bindTools']>[0]) {

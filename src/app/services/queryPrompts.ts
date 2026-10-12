@@ -9,6 +9,8 @@ const promptFiles = {
   executeQuery: "execute-query.md",
   mcpConstructSql: "mcp-construct-sql.md",
   mcpExecuteQuery: "mcp-execute-query.md",
+  mcpSummarizeResults: "mcp-summarize-results.md",
+  resultSummary: "result-summary.md",
 } as const;
 
 export type QueryPrompts = Record<keyof typeof promptFiles, string>;

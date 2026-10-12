@@ -16,3 +16,8 @@ export interface QueryAgentResult {
   warnings: string[];
   queryResult: DatabaseQueryResult;
 }
+
+export interface QueryChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}

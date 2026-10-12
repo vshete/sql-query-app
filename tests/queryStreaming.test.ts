@@ -468,3 +468,94 @@ test("a database failure stops without more model calls", async () => {
     connect.mock.restore();
   }
 });
+
+test("follow-up context reaches both agent and SQL generator, with a grounded text summary", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  const agentTokens: string[] = [];
+  const history = [
+    { role: "user" as const, content: "List defaulting customers" },
+    {
+      role: "assistant" as const,
+      content: JSON.stringify({
+        sql: "SELECT * FROM customers;",
+        sampleRows: [{ id: 1 }],
+      }),
+    },
+  ];
+  globalThis.fetch = async (_input, init) => {
+    const body = JSON.parse(String(init?.body));
+    calls++;
+    for (const message of history) {
+      assert.ok(
+        body.messages.some(
+          (entry: { role: string; content: string }) =>
+            entry.role === message.role && entry.content === message.content,
+        ),
+        `history missing from call ${calls}`,
+      );
+    }
+    if (calls === 4) {
+      assert.ok(body.messages.at(-1).content.includes('"rowCount":1'));
+      assert.ok(body.messages.at(-1).content.includes('"sampleRows":[{"id":1}]'));
+      assert.match(body.messages[0].content, /human-readable answer/);
+      assert.match(body.messages[0].content, /tabulated results/);
+      assert.match(body.messages[0].content, /sampled or truncated/);
+      return streamResponse({
+        content: "The query returned one matching customer.",
+      });
+    }
+    return streamResponse(
+      calls === 2
+        ? { content: "SELECT * FROM customers;" }
+        : toolDelta([calls === 1 ? "construct_sql" : "execute_query"]),
+    );
+  };
+  try {
+    const result = await runQueryAgent(
+      "For this, show customer names",
+      "openai",
+      "test-key",
+      "test",
+      { history, summarizeResults: true, onAgentToken: (token) => agentTokens.push(token) },
+    );
+    assert.equal(calls, 4);
+    assert.equal(result.queryResult.rowCount, 1);
+    assert.equal(
+      result.explanation,
+      "The query returned one matching customer.",
+    );
+    assert.equal(agentTokens.join(""), "\n\nThe query returned one matching customer.");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("an optional summary failure preserves the successfully executed table", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    if (calls === 4) throw new Error("Summary unavailable");
+    return streamResponse(
+      calls === 2
+        ? { content: "SELECT * FROM customers;" }
+        : toolDelta([calls === 1 ? "construct_sql" : "execute_query"]),
+    );
+  };
+  try {
+    const result = await runQueryAgent(
+      "List customers",
+      "openai",
+      "test-key",
+      "test",
+      { summarizeResults: true },
+    );
+    assert.equal(result.queryResult.rowCount, 1);
+    assert.ok(
+      result.warnings.some((warning) => warning.includes("text summary")),
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

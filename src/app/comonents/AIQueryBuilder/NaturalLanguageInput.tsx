@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import dynamic from "next/dynamic";
-import { useAIQueryGeneration } from "@/app/hooks/useAIQueryGeneration";
+import {
+  useAIQueryGeneration,
+  type QueryTurn,
+} from "@/app/hooks/useAIQueryGeneration";
 import type { useDefaultDatabaseConnection } from "@/app/hooks/useDefaultDatabaseConnection";
+import dynamic from "next/dynamic";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { QueryResult } from "../QueryResult";
 import { WorkspaceIcon } from "../WorkspaceIcon";
-import { QueryPrompt } from "./QueryPrompt";
 import { QueryPreview } from "./QueryPreview";
+import { QueryPrompt } from "./QueryPrompt";
 import styles from "./queryAgent.module.css";
 
 const AgentResponse = dynamic(() => import("./AgentResponse"), {
@@ -32,6 +35,9 @@ export default function NaturalLanguageInput({
     databaseConnection;
   const {
     generateQuery,
+    reset,
+    request,
+    previousTurns,
     hasStarted,
     streamedSQL,
     agentText,
@@ -39,9 +45,17 @@ export default function NaturalLanguageInput({
     error,
     result,
   } = useAIQueryGeneration();
+
+  const latestTurn = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    latestTurn.current?.scrollIntoView({
+      block: "nearest",
+      behavior: "smooth",
+    });
+  }, [request, result]);
+
   const disabled =
     !connection.connected || isConnecting || isGenerating || isLoading;
-  const responseText = agentText || result?.explanation;
   const reconnect = useCallback(() => retryConnection(), [retryConnection]);
 
   useEffect(() => {
@@ -66,15 +80,43 @@ export default function NaturalLanguageInput({
         <div>
           <p className={styles.eyebrow}>YOUR DATA, A LITTLE CLOSER</p>
           <h1>Query workspace</h1>
-          <p>
-            Ask a question. Explore the SQL. Get answers from your database.
-          </p>
+          <p>Ask a question, then refine the answer with follow-ups.</p>
         </div>
         <span className={styles.workspaceBadge}>
           <WorkspaceIcon name="database" /> PostgreSQL
         </span>
       </div>
       <div className={styles.nlInputContainer}>
+        <div className={styles.chatToolbar}>
+          <span>Current session only · Follow up on any answer</span>
+          <button
+            type="button"
+            className={styles.clearBtn}
+            disabled={isGenerating || !hasStarted}
+            onClick={() => {
+              reset();
+              setInput("");
+            }}
+          >
+            New chat
+          </button>
+        </div>
+        <section
+          className={styles.chatHistory}
+          aria-label="Conversation"
+          aria-busy={isGenerating}
+        >
+          {previousTurns.map((turn, index) => (
+            <ConversationTurn key={index} turn={turn} isGenerating={false} />
+          ))}
+          {hasStarted && (
+            <ConversationTurn
+              turn={{ request, streamedSQL, agentText, error, result }}
+              isGenerating={isGenerating}
+            />
+          )}
+          {hasStarted && <div ref={latestTurn} />}
+        </section>
         <QueryPrompt
           input={input}
           onInputChange={setInput}
@@ -86,28 +128,6 @@ export default function NaturalLanguageInput({
           connectionError={connectionError}
           placeholder={placeholder}
         />
-        {hasStarted && (
-          <QueryPreview
-            sql={streamedSQL}
-            isGenerating={isGenerating}
-            error={error}
-          />
-        )}
-        {responseText && <AgentResponse text={responseText} />}
-        {result && result.warnings.length > 0 && (
-          <ul className={styles.queryWarnings} aria-label="Query warnings">
-            {result.warnings.map((warning, index) => (
-              <li key={index}>{warning}</li>
-            ))}
-          </ul>
-        )}
-        <section aria-label="Query results">
-          <QueryResult
-            result={result?.queryResult}
-            isDataLoading={isGenerating}
-            errorMessage={error ?? undefined}
-          />
-        </section>
         {isGenerating && (
           <div className={styles.generationStatus} role="status">
             <span className={styles.generationSpinner} aria-hidden="true" />
@@ -118,3 +138,42 @@ export default function NaturalLanguageInput({
     </main>
   );
 }
+
+const ConversationTurn = memo(function ConversationTurn({
+  turn,
+  isGenerating,
+}: {
+  turn: QueryTurn;
+  isGenerating: boolean;
+}) {
+  const responseText = turn.result?.explanation || turn.agentText;
+  return (
+    <article className={styles.chatTurn}>
+      <div className={styles.userMessage}>
+        <strong>You</strong>
+        <p>{turn.request}</p>
+      </div>
+      <div className={styles.assistantMessage}>
+        <strong>Query assistant</strong>
+        <QueryPreview
+          sql={turn.streamedSQL}
+          isGenerating={isGenerating}
+          error={turn.error}
+        />
+        {responseText && <AgentResponse text={responseText} />}
+        {!!turn.result?.warnings.length && (
+          <ul className={styles.queryWarnings} aria-label="Query warnings">
+            {turn.result.warnings.map((warning, index) => (
+              <li key={index}>{warning}</li>
+            ))}
+          </ul>
+        )}
+        <QueryResult
+          result={turn.result?.queryResult}
+          isDataLoading={isGenerating}
+          errorMessage={turn.error ?? undefined}
+        />
+      </div>
+    </article>
+  );
+});

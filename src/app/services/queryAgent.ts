@@ -1,16 +1,15 @@
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import { tool } from "@langchain/core/tools";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { createAgent } from "langchain";
+import { randomUUID } from "node:crypto";
+import { z } from "zod";
 import type {
   DatabaseQueryResult,
   QueryAgentResult,
 } from "../types/query.types";
-import { randomUUID } from "node:crypto";
-import { createQueryModel } from "./mocks/modelFactory";
 import { isMockModelEnabled } from "./mocks/mockMode";
-import { tool } from "@langchain/core/tools";
-import { createAgent } from "langchain";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { z } from "zod";
-import { loadQueryPrompts, type QueryPrompts } from "./queryPrompts";
-import { createQueryAgentMiddleware } from "./queryAgentMiddleware";
+import { createQueryModel } from "./mocks/modelFactory";
 import {
   extractText,
   initializeMcpServer,
@@ -18,6 +17,9 @@ import {
   QueryRequestContext,
   requestContexts,
 } from "./queryAgentMCP";
+import { createQueryAgentMiddleware } from "./queryAgentMiddleware";
+import { parseQueryHistory } from "./queryConversation";
+import { loadQueryPrompts, type QueryPrompts } from "./queryPrompts";
 
 function parseToolText(result: unknown): string {
   if (
@@ -60,6 +62,7 @@ export async function runQueryAgent(
   modelName: string,
   options: QueryAgentOptions = {},
 ): Promise<QueryAgentResult> {
+  options = { ...options, history: parseQueryHistory(options.history) };
   const mockModel = isMockModelEnabled();
   const model = createQueryModel({
     provider,
@@ -128,7 +131,16 @@ export async function runQueryAgent(
       systemPrompt: prompts.queryAgent,
     });
     const events = agent.streamEvents(
-      { messages: [{ role: "user", content: request }] },
+      {
+        messages: [
+          ...(options.history ?? []).map((message) =>
+            message.role === "user"
+              ? new HumanMessage(message.content)
+              : new AIMessage(message.content),
+          ),
+          { role: "user", content: request },
+        ],
+      },
       { version: "v2", signal: options.signal },
     );
     for await (const event of events) {
@@ -149,7 +161,7 @@ export async function runQueryAgent(
       );
     }
 
-    return {
+    const result: QueryAgentResult = {
       generatedSQL,
       explanation: mockModel
         ? "Generated using a mock model and executed against PostgreSQL."
@@ -160,6 +172,26 @@ export async function runQueryAgent(
         : [],
       queryResult,
     };
+
+    if (options.summarizeResults) {
+      try {
+        const summary = await mcpClient.callTool({
+          name: "summarize_results",
+          arguments: { request, requestId },
+        });
+        const { explanation } = JSON.parse(parseToolText(summary)) as {
+          explanation: string;
+        };
+        if (explanation.trim()) result.explanation = explanation.trim();
+      } catch (error) {
+        if (options.signal?.aborted) throw error;
+        // A failed optional explanation must not discard a successfully executed table.
+        result.warnings.push(
+          "The text summary could not be generated. The query results are available below.",
+        );
+      }
+    }
+    return result;
   } finally {
     requestContexts.delete(requestId);
   }

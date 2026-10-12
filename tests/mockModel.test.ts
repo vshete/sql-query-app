@@ -30,7 +30,7 @@ import {
   isMockModelEnabled,
 } from "../src/app/services/mocks/mockMode";
 import { MOCK_SQL } from "../src/app/services/mocks/modelFactory";
-import { MockQueryChatModel } from "../src/app/services/mocks/mockQueryChatModel";
+import { MOCK_SUMMARY, MockQueryChatModel } from "../src/app/services/mocks/mockQueryChatModel";
 import { getAgentConfig } from "../src/app/services/agentConfig";
 import { runQueryAgent } from "../src/app/services/queryAgent";
 
@@ -106,8 +106,11 @@ test("mock requests stream identical SQL without provider calls and execute thro
       ["List customers", "Show revenue by product"].map(async (request) => {
         let started = 0;
         const tokens: string[] = [];
+        const agentTokens: string[] = [];
         const tokenTimes: number[] = [];
         const result = await runQueryAgent(request, provider, apiKey, model, {
+          summarizeResults: request === "List customers",
+          onAgentToken: (token) => agentTokens.push(token),
           onSqlStart: () => {
             started++;
           },
@@ -128,6 +131,14 @@ test("mock requests stream identical SQL without provider calls and execute thro
         assert.deepEqual(result.queryResult.rows, [
           { customer_id: "REAL_DB_ROW" },
         ]);
+        if (request === "List customers") {
+          assert.equal(result.explanation, MOCK_SUMMARY);
+          assert.equal(agentTokens.join(""), `\n\n${MOCK_SUMMARY}`);
+          assert.ok(agentTokens.length > 2, "summary arrives in multiple chunks");
+        } else {
+          assert.equal(agentTokens.join(""), "");
+          assert.match(result.explanation, /Generated using a mock model/);
+        }
       }),
     );
     assert.equal(fetch.mock.callCount(), 0);
