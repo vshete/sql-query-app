@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // The parser ships ESM with extensionless imports; bundle it instead of
+  // letting the production Node.js runtime load the package directly.
+  transpilePackages: ["dt-sql-parser"],
 };
 
 export default nextConfig;
