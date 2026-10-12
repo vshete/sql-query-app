@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { executeDatabaseQuery } from "@/app/services/database";
+import { isSameHostOrigin } from "@/app/services/requestOrigin";
 import {
   connectionIdFromCookie,
   getDatabaseConnection,
@@ -17,6 +18,14 @@ export default async function handler(
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
+  }
+  if (
+    req.headers.origin &&
+    !isSameHostOrigin(req.headers.origin, req.headers.host)
+  ) {
+    return res
+      .status(403)
+      .json({ error: "Cross-site requests are not allowed." });
   }
   if (typeof req.body?.query !== "string" || !req.body.query.trim())
     return res.status(400).json({ error: "A SQL query is required." });

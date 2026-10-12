@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import type { DatabaseQueryResult } from "../types/query.types";
+import { useFetchQueryResults } from "../hooks/useFetchQueryResults";
 import styles from "./AIQueryBuilder/queryAgent.module.css";
 import { QueryBox } from "./QueryBox";
 import { WorkspaceIcon } from "./WorkspaceIcon";
@@ -14,46 +14,28 @@ export function ManualQueryEditor({
   onResult: (result: DatabaseQueryResult) => void;
   disabled?: boolean;
 }) {
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [error, setError] = useState("");
+  const { executeQuery, isDataLoading, errorMessage } = useFetchQueryResults();
 
   async function execute(query: string) {
-    if (disabled || isExecuting) return;
-    setIsExecuting(true);
-    setError("");
-    try {
-      const response = await fetch("/api/post/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-      });
-      const result = await response.json();
-      if (!response.ok)
-        throw new Error(result.error || "Query execution failed.");
-      onResult(result);
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Query execution failed.",
-      );
-    } finally {
-      setIsExecuting(false);
-    }
+    if (disabled) return;
+    const result = await executeQuery(query);
+    if (result) onResult(result);
   }
 
   return (
-    <details className={styles.mockResults}>
+    <details className={styles.sqlPreview}>
       <summary className={styles.editorSummary}>
         <WorkspaceIcon name="terminal" /> Manual SQL editor{" "}
         <span>Write and run your own query</span>
       </summary>
       <QueryBox
         onQueryExecute={(query) => void execute(query)}
-        isDisabled={disabled || isExecuting}
+        isDisabled={disabled || isDataLoading}
       />
-      {isExecuting && <p role="status">Running query…</p>}
-      {error && (
+      {isDataLoading && <p role="status">Running query…</p>}
+      {errorMessage && (
         <div className={styles.error} role="alert">
-          {error}
+          {errorMessage}
         </div>
       )}
     </details>

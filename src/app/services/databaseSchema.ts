@@ -1,20 +1,11 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { QueryTypes, type Sequelize } from "sequelize";
+import type { SchemaTable } from "../types/databaseSchema.types";
 import { getDatabase } from "./database";
 
-interface Column {
-  name: string;
-  type: string;
-  nullable: boolean;
-  default: string | null;
-}
-export interface SchemaTable {
-  schema: string;
-  name: string;
-  columns: Column[];
-  constraints: string[];
-}
+export type { SchemaTable } from "../types/databaseSchema.types";
+
 export interface DatabaseSchema {
   text: string;
   tables: SchemaTable[];

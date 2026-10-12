@@ -38,9 +38,8 @@ export const codeEditorTheme = [
       outline: "none",
     },
     ".cm-scroller": {
-      height: "100%",
+      // Collapsed/expanded height is owned by codeEditorTheme.css.
       minHeight: "0",
-      maxHeight: "none",
       overflow: "auto",
     },
     ".cm-content, .cm-gutter": { minHeight: "100%" },

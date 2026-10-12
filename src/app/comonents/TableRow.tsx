@@ -1,21 +1,19 @@
-import styles from "./AIQueryBuilder/queryAgent.module.css";
-import React from "react";
+import { memo } from "react";
+import type { Row } from "@tanstack/react-table";
+import type { QueryRow } from "../types/query.types";
 import { TableCell } from "./TableCell";
-import { Cell, Row } from "@tanstack/react-table";
+import styles from "./AIQueryBuilder/queryAgent.module.css";
 
-type TableRowProps = {
-  row: Row<string[]>;
-  columnSizeVars: { [key: string]: number };
-};
-
-export const TableRow = React.memo(({ row, columnSizeVars }: TableRowProps) => {
+export const TableRow = memo(function TableRow({
+  row,
+}: {
+  row: Row<QueryRow>;
+}) {
   return (
-    <tr key={row.id} className={styles.resultRow}>
-      {row.getVisibleCells().map((cell: Cell<string[], unknown>) => (
-        <TableCell key={cell.id} columnSizeVars={columnSizeVars} cell={cell} />
+    <tr className={styles.resultRow}>
+      {row.getVisibleCells().map((cell) => (
+        <TableCell key={cell.id} cell={cell} />
       ))}
     </tr>
   );
 });
-
-TableRow.displayName = "TableRow";

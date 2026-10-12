@@ -1,20 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { memo, useId, useMemo, useState, useDeferredValue } from "react";
 import type { ConnectionInfo } from "@/app/types/databaseConnection.types";
 import { WorkspaceIcon } from "../WorkspaceIcon";
 import styles from "./queryAgent.module.css";
 
-export default function SchemaExplorer({
+export default memo(function SchemaExplorer({
   connection,
   isLoading,
+  onRefresh,
+  refreshDisabled,
 }: {
   connection: ConnectionInfo;
   isLoading: boolean;
+  onRefresh: () => void;
+  refreshDisabled: boolean;
 }) {
   const [filter, setFilter] = useState("");
+  const search = useDeferredValue(filter.trim().toLowerCase());
+  const id = useId();
+  const titleId = `${id}-title`;
   const groups = useMemo(() => {
-    const search = filter.trim().toLowerCase();
     const schemas = new Map<string, NonNullable<ConnectionInfo["tables"]>>();
     for (const table of connection.tables ?? []) {
       if (
@@ -30,23 +36,34 @@ export default function SchemaExplorer({
       schemas.set(table.schema, tables);
     }
     return [...schemas.entries()];
-  }, [connection.tables, filter]);
+  }, [connection.tables, search]);
 
   return (
     <aside
       className={styles.schemaExplorer}
-      aria-labelledby="schema-explorer-title"
+      aria-labelledby={titleId}
       aria-busy={isLoading}
     >
       <div className={styles.explorerHeading}>
-        <h2 id="schema-explorer-title">Schema explorer</h2>
-        <WorkspaceIcon name="database" size={15} />
+        <h2 id={titleId}>Schema explorer</h2>
+        <button
+          type="button"
+          className={styles.clearBtn}
+          onClick={onRefresh}
+          disabled={isLoading || refreshDisabled}
+        >
+          {isLoading
+            ? "Updating…"
+            : connection.connected
+              ? "Refresh"
+              : "Reconnect"}
+        </button>
       </div>
-      <label className={styles.explorerFilterLabel} htmlFor="schema-filter">
+      <label className={styles.explorerFilterLabel} htmlFor={id}>
         Filter tables or columns
       </label>
       <input
-        id="schema-filter"
+        id={id}
         type="search"
         className={styles.explorerFilter}
         placeholder="Filter tables or columns…"
@@ -71,14 +88,14 @@ export default function SchemaExplorer({
           groups.map(([schema, tables]) => (
             <details key={schema} className={styles.schemaGroup} open>
               <summary className={styles.schemaSummary}>
-                <span>{schema}</span>
+                <span title={schema}>{schema}</span>
                 <span className={styles.explorerCount}>{tables.length}</span>
               </summary>
               {tables.map((table) => (
                 <details
-                  key={table.name}
+                  key={`${table.name}:${search}`}
                   className={styles.schemaTable}
-                  open={filter.trim() ? true : undefined}
+                  open={search ? true : undefined}
                 >
                   <summary className={styles.tableSummary}>
                     <WorkspaceIcon name="table" size={14} />
@@ -125,4 +142,4 @@ export default function SchemaExplorer({
       </div>
     </aside>
   );
-}
+});

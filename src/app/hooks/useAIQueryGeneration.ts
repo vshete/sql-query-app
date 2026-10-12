@@ -2,140 +2,79 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { QueryAgentResult } from "../types/query.types";
+import { MAX_REQUEST_LENGTH, streamQuery } from "../services/queryStream";
+
+interface GenerationState {
+  hasStarted: boolean;
+  isGenerating: boolean;
+  streamedSQL: string;
+  agentText: string;
+  error: string | null;
+  result?: QueryAgentResult;
+}
+
+const idle: GenerationState = {
+  hasStarted: false,
+  isGenerating: false,
+  streamedSQL: "",
+  agentText: "",
+  error: null,
+};
 
 export function useAIQueryGeneration() {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [streamedSQL, setStreamedSQL] = useState("");
-  const [agentText, setAgentText] = useState("");
-  const [hasStarted, setHasStarted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const active = useRef<WebSocket | null>(null);
+  const [state, setState] = useState(idle);
+  const active = useRef<AbortController | null>(null);
 
   useEffect(
     () => () => {
-      active.current?.close();
+      const controller = active.current;
+      active.current = null;
+      controller?.abort();
     },
     [],
   );
 
-  const generateQuery = useCallback(
-    async (naturalLanguage: string, onSQL?: (sql: string) => void) => {
-      if (active.current)
-        throw new Error("A query is already being generated.");
-      setHasStarted(true);
-      setIsGenerating(true);
-      setError(null);
-      setStreamedSQL("");
-      setAgentText("");
-      try {
-        const result = await new Promise<QueryAgentResult>(
-          (resolve, reject) => {
-            const protocol =
-              window.location.protocol === "https:" ? "wss:" : "ws:";
-            const socket = new WebSocket(
-              `${protocol}//${window.location.host}/api/agent/stream`,
-            );
-
-            active.current = socket;
-            let settled = false;
-            let sql = "";
-            let answer = "";
-            let frame: number | undefined;
-
-            function flushTokens() {
-              if (frame !== undefined) cancelAnimationFrame(frame);
-              frame = undefined;
-              setStreamedSQL(sql);
-              setAgentText(answer);
-              onSQL?.(sql);
-            }
-
-            function scheduleTokens() {
-              // Preserve every token, but update React at most once per paint.
-              frame ??= requestAnimationFrame(flushTokens);
-            }
-
-            const timer = setTimeout(
-              () => finish(new Error("Query generation timed out.")),
-              125_000,
-            );
-
-            function finish(err?: Error, result?: QueryAgentResult) {
-              if (settled) return;
-              settled = true;
-              clearTimeout(timer);
-              flushTokens();
-              socket.close();
-              if (err) reject(err);
-              else resolve(result!);
-            }
-
-            socket.onopen = () =>
-              socket.send(JSON.stringify({ request: naturalLanguage }));
-            socket.onmessage = (event) => {
-              try {
-                const message = JSON.parse(event.data);
-                if (settled) return;
-                if (message.type === "sql_start") {
-                  // Request initialization already cleared the buffers. Never
-                  // clear a visible stream in response to another start event.
-                } else if (
-                  message.type === "token" &&
-                  typeof message.token === "string"
-                ) {
-                  sql += message.token;
-                  scheduleTokens();
-                } else if (
-                  message.type === "agent_token" &&
-                  typeof message.token === "string"
-                ) {
-                  answer += message.token;
-                  scheduleTokens();
-                } else if (message.type === "result") {
-                  // Preserve streamed text and selection; normalization must not
-                  // replace the document at the end of a successful stream.
-                  if (!sql) {
-                    sql = message.result.generatedSQL;
-                  }
-                  finish(undefined, message.result);
-                } else if (message.type === "error") {
-                  finish(new Error(message.error));
-                }
-              } catch {
-                finish(new Error("Invalid response from query agent."));
-              }
-            };
-            socket.onerror = () =>
-              finish(new Error("Could not connect to the query agent."));
-            socket.onclose = () =>
-              finish(new Error("Query stream closed before completion."));
-          },
-        );
-        return result;
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unknown error");
-        throw err;
-      } finally {
+  const generateQuery = useCallback(async (naturalLanguage: string) => {
+    const request = naturalLanguage.trim();
+    if (!request || request.length > MAX_REQUEST_LENGTH)
+      throw new Error(`Enter a request of 1–${MAX_REQUEST_LENGTH} characters.`);
+    if (active.current) throw new Error("A query is already being generated.");
+    const controller = new AbortController();
+    active.current = controller;
+    setState({ ...idle, hasStarted: true, isGenerating: true });
+    try {
+      const result = await streamQuery(request, {
+        signal: controller.signal,
+        onUpdate: (streamedSQL, agentText) => {
+          if (active.current === controller)
+            setState((previous) => ({ ...previous, streamedSQL, agentText }));
+        },
+      });
+      if (active.current === controller)
+        setState((previous) => ({ ...previous, result }));
+      return result;
+    } catch (error: unknown) {
+      if (active.current === controller)
+        setState((previous) => ({
+          ...previous,
+          error:
+            error instanceof Error ? error.message : "Query generation failed.",
+        }));
+      throw error;
+    } finally {
+      if (active.current === controller) {
         active.current = null;
-        setIsGenerating(false);
+        setState((previous) => ({ ...previous, isGenerating: false }));
       }
-    },
-    [],
-  );
+    }
+  }, []);
 
   const reset = useCallback(() => {
-    setHasStarted(false);
-    setStreamedSQL("");
-    setAgentText("");
-    setError(null);
+    const controller = active.current;
+    active.current = null;
+    controller?.abort();
+    setState(idle);
   }, []);
-  return {
-    reset,
-    hasStarted,
-    streamedSQL,
-    agentText,
-    isGenerating,
-    error,
-    generateQuery,
-  };
+
+  return { ...state, generateQuery, reset };
 }

@@ -1,4 +1,4 @@
-import type { SchemaTable } from "../services/databaseSchema";
+import type { SchemaTable } from "./databaseSchema.types";
 
 export interface ConnectionInfo {
   connected: boolean;

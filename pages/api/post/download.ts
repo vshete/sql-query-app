@@ -4,6 +4,8 @@ import {
   getDatabaseConnection,
 } from "@/app/services/databaseConnections";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { queryResultCsv } from "@/app/services/queryResults";
+import { isSameHostOrigin } from "@/app/services/requestOrigin";
 
 /**
  * Accepts a POST with a SQL query and executes it using the cookie's database
@@ -18,6 +20,14 @@ export default async function handler(
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
   }
+  if (
+    req.headers.origin &&
+    !isSameHostOrigin(req.headers.origin, req.headers.host)
+  ) {
+    return res
+      .status(403)
+      .json({ error: "Cross-site requests are not allowed." });
+  }
 
   if (typeof req.body?.query !== "string" || !req.body.query.trim())
     return res.status(400).json({ error: "A SQL query is required." });
@@ -31,17 +41,7 @@ export default async function handler(
       undefined,
       database,
     );
-    const rows = [
-      result.columns,
-      ...result.rows.map((row) =>
-        result.columns.map((column) => String(row[column] ?? "")),
-      ),
-    ];
-    const csv = rows
-      .map((row) =>
-        row.map((value) => `"${value.replaceAll('"', '""')}"`).join(","),
-      )
-      .join("\r\n");
+    const csv = queryResultCsv(result);
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader(
       "Content-Disposition",

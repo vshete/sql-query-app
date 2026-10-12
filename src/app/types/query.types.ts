@@ -1,6 +1,9 @@
+export type QueryValue = string | number | boolean | null;
+export type QueryRow = Record<string, QueryValue>;
+
 export interface DatabaseQueryResult {
   columns: string[];
-  rows: Array<Record<string, string | number | boolean | null>>;
+  rows: QueryRow[];
   rowCount: number;
   truncated: boolean;
   message: string;

@@ -25,6 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <a className="skip-link" href="#query-workspace">
+          Skip to query workspace
+        </a>
         {children}
       </body>
     </html>

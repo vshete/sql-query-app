@@ -8,6 +8,12 @@ import {
 } from "./src/app/services/databaseConnections";
 import { configureMockModelMode } from "./src/app/services/mocks/mockMode";
 import { runQueryAgent } from "./src/app/services/queryAgent";
+import { isSameHostOrigin } from "./src/app/services/requestOrigin";
+import {
+  AGENT_TIMEOUT_MS,
+  MAX_REQUEST_LENGTH,
+  MAX_REQUEST_PAYLOAD_BYTES,
+} from "./src/app/types/queryProtocol";
 
 async function main() {
   const dev = process.env.NODE_ENV !== "production";
@@ -16,7 +22,10 @@ async function main() {
   const app = next({ dev, port });
   await app.prepare();
   const server = createServer(app.getRequestHandler());
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 16 * 1024 });
+  const wss = new WebSocketServer({
+    noServer: true,
+    maxPayload: MAX_REQUEST_PAYLOAD_BYTES,
+  });
   const nextUpgrade = app.getUpgradeHandler();
 
   server.on("upgrade", (req, socket, head) => {
@@ -25,15 +34,10 @@ async function main() {
       return;
     }
     // Browsers must connect from the same host; prevent cross-site agent requests.
-    try {
-      if (
-        !req.headers.origin ||
-        new URL(req.headers.origin).host !== req.headers.host
-      ) {
-        socket.destroy();
-        return;
-      }
-    } catch {
+    if (
+      !req.headers.origin ||
+      !isSameHostOrigin(req.headers.origin, req.headers.host)
+    ) {
       socket.destroy();
       return;
     }
@@ -49,7 +53,7 @@ async function main() {
       send({ type: "error", error: "Query generation timed out." });
       controller.abort();
       ws.close();
-    }, 180_000);
+    }, AGENT_TIMEOUT_MS);
     function send(event: unknown) {
       if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
     }
@@ -66,7 +70,7 @@ async function main() {
         if (
           typeof payload.request !== "string" ||
           !payload.request.trim() ||
-          payload.request.length > 10_000
+          payload.request.length > MAX_REQUEST_LENGTH
         ) {
           throw new Error("A request of 1–10000 characters is required.");
         }

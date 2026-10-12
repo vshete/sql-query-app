@@ -1,9 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { fetchJson } from "@/app/services/clientApi";
+import { parseConnectionInfo } from "@/app/services/clientValidation";
 import type { ConnectionInfo } from "@/app/types/databaseConnection.types";
-export type { ConnectionInfo } from "@/app/types/databaseConnection.types";
+import { useEffect, useRef, useState } from "react";
 import { WorkspaceIcon } from "../WorkspaceIcon";
 import styles from "./queryAgent.module.css";
+export type { ConnectionInfo } from "@/app/types/databaseConnection.types";
 
 interface Props {
   onChange: (connection: ConnectionInfo) => void;
@@ -22,46 +24,76 @@ export default function DatabaseConnection({
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
 
+  const active = useRef<AbortController | null>(null);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
   useEffect(() => {
     onBusyChange(busy);
   }, [busy, onBusyChange]);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/database/connection", { signal: controller.signal })
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
-        setConnection(data);
-        onChange(data);
+    active.current = controller;
+    fetchJson("/api/database/connection", {
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)]),
+    })
+      .then((value) => {
+        const connection = parseConnectionInfo(value);
+        if (!controller.signal.aborted) {
+          setConnection(connection);
+          onChangeRef.current(connection);
+        }
       })
-      .catch((error) => {
-        if (!controller.signal.aborted) setError(error.message);
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted)
+          setError(
+            error instanceof Error ? error.message : "Connection failed.",
+          );
       })
       .finally(() => {
-        if (!controller.signal.aborted) setBusy(false);
+        if (!controller.signal.aborted) {
+          active.current = null;
+          setBusy(false);
+        }
       });
-    return () => controller.abort();
-  }, [onChange]);
+    return () => {
+      active.current?.abort();
+      active.current = null;
+    };
+  }, []);
 
   async function update(method: "POST" | "DELETE", refresh = false) {
-    if (busy || disabled) return;
+    if (active.current || disabled) return;
+    const controller = new AbortController();
+    active.current = controller;
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/database/connection", {
+      const value = await fetchJson("/api/database/connection", {
         method,
         headers: { "Content-Type": "application/json" },
         body: method === "POST" ? JSON.stringify({ refresh }) : undefined,
+        signal: AbortSignal.any([
+          controller.signal,
+          AbortSignal.timeout(30_000),
+        ]),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      setConnection(data);
-      onChange(data);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Connection failed.");
+      const connection = parseConnectionInfo(value);
+      if (!controller.signal.aborted) {
+        setConnection(connection);
+        onChangeRef.current(connection);
+      }
+    } catch (error: unknown) {
+      if (!controller.signal.aborted)
+        setError(error instanceof Error ? error.message : "Connection failed.");
     } finally {
-      setBusy(false);
+      if (!controller.signal.aborted) {
+        active.current = null;
+        setBusy(false);
+      }
     }
   }
 

@@ -1,4 +1,3 @@
-"use client";
 import Link from "next/link";
 import NaturalLanguageInput from "./AIQueryBuilder/NaturalLanguageInput";
 import { WorkspaceIcon } from "./WorkspaceIcon";
@@ -19,7 +18,7 @@ export const AppEntry = () => (
         PostgreSQL <span> / </span> AI assisted
       </span>
     </header>
-    <main className={styles.workspace}>
+    <main id="query-workspace" tabIndex={-1} className={styles.workspace}>
       <NaturalLanguageInput />
     </main>
   </div>

@@ -1,45 +1,60 @@
 "use client";
-import { useCallback, useRef, useState } from "react";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { fetchJson } from "../services/clientApi";
+import { parseQueryResult } from "../services/clientValidation";
 import type { DatabaseQueryResult } from "../types/query.types";
 
-export const useFetchQueryResults = () => {
-  const [data, setData] = useState<string[][]>();
-  const [totalPages, setTotalPages] = useState(0);
+/** Shared manual execution lifecycle; the table owns display pagination. */
+export function useFetchQueryResults() {
+  const [result, setResult] = useState<DatabaseQueryResult>();
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
-  const loading = useRef(false);
+  const active = useRef<AbortController | null>(null);
+
+  useEffect(
+    () => () => {
+      const controller = active.current;
+      active.current = null;
+      controller?.abort();
+    },
+    [],
+  );
+
   const executeQuery = useCallback(async (query: string) => {
-    if (loading.current) return;
-    loading.current = true;
+    if (active.current || !query.trim()) return;
+    const controller = new AbortController();
+    active.current = controller;
     setIsDataLoading(true);
     setErrorMessage(undefined);
-    setData(undefined);
-    setTotalPages(0);
+    setResult(undefined);
     try {
-      const response = await fetch("/api/post/query", {
+      const response = await fetchJson("/api/post/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
+        signal: AbortSignal.any([
+          controller.signal,
+          AbortSignal.timeout(30_000),
+        ]),
       });
-      const result = await response.json();
-      if (!response.ok)
-        throw new Error(result.error || "Failed to execute query");
-      const rows = result as DatabaseQueryResult;
-      setData([
-        rows.columns,
-        ...rows.rows.map((row) =>
-          rows.columns.map((column) => String(row[column] ?? "")),
-        ),
-      ]);
-      setTotalPages(Math.max(1, Math.ceil(rows.rowCount / 10)));
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Failed to execute query.",
-      );
+      const value = parseQueryResult(response);
+      if (active.current === controller) {
+        setResult(value);
+        return value;
+      }
+    } catch (error: unknown) {
+      if (active.current === controller)
+        setErrorMessage(
+          error instanceof Error ? error.message : "Query execution failed.",
+        );
     } finally {
-      loading.current = false;
-      setIsDataLoading(false);
+      if (active.current === controller) {
+        active.current = null;
+        setIsDataLoading(false);
+      }
     }
   }, []);
-  return { data, isDataLoading, errorMessage, executeQuery, totalPages };
-};
+
+  return { result, isDataLoading, errorMessage, executeQuery };
+}

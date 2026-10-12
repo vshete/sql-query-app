@@ -7,18 +7,12 @@ import { createEditorState } from "./codeEditorConfig";
 import "./codeEditorTheme.css";
 
 /** SQL output stays selectable and copyable, but cannot be edited by the user. */
-export const CodeEditor = memo(function CodeEditor({
-  code,
-  language,
-}: {
-  code: string;
-  language: "sql";
-}) {
+export const CodeEditor = memo(function CodeEditor({ code }: { code: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [expanded, setExpanded] = useState(false);
   const editorId = useId();
-  const hasMoreLines = code.split("\n").length > 5;
+  const hasMoreLines = code.split("\n", 6).length > 5;
 
   useEffect(() => {
     if (!code) setExpanded(false);
@@ -63,8 +57,8 @@ export const CodeEditor = memo(function CodeEditor({
       <div
         ref={hostRef}
         id={editorId}
-        className={`ce-editor-mount${expanded ? " ce-editor-expanded" : ""}`}
-        aria-label={`Read-only ${language} output`}
+        className={`ce-editor-mount${expanded && hasMoreLines ? " ce-editor-expanded" : ""}`}
+        aria-label="Read-only SQL output"
       />
       {hasMoreLines && (
         <button

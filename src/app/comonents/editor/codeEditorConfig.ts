@@ -1,12 +1,23 @@
 import { EditorState, type Extension } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
-import { basicSetup } from "codemirror";
+import {
+  EditorView,
+  drawSelection,
+  highlightSpecialChars,
+  lineNumbers,
+} from "@codemirror/view";
 import { codeEditorTheme } from "./codeEditorTheme";
 
-export function createEditorState({ languageSupport }: { languageSupport: Extension }) {
+export function createEditorState({
+  languageSupport,
+}: {
+  languageSupport: Extension;
+}) {
   return EditorState.create({
     extensions: [
-      basicSetup,
+      // Read-only output does not need editing history or edit keymaps.
+      lineNumbers(),
+      highlightSpecialChars(),
+      drawSelection(),
       languageSupport,
       codeEditorTheme,
       EditorState.readOnly.of(true),

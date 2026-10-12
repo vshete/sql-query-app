@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { WorkspaceIcon } from "./WorkspaceIcon";
 import styles from "./AIQueryBuilder/queryAgent.module.css";
@@ -31,7 +33,11 @@ export const QueryBox = ({
         placeholder="SELECT * FROM your_table LIMIT 10;"
         spellCheck={false}
         onKeyDown={(event) => {
-          if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          if (
+            !event.nativeEvent.isComposing &&
+            (event.metaKey || event.ctrlKey) &&
+            event.key === "Enter"
+          ) {
             event.preventDefault();
             handleExecute();
           }
@@ -40,6 +46,7 @@ export const QueryBox = ({
       <div className={styles.editorActions}>
         <span className={styles.shortcutHint}>Ctrl / ⌘ + Enter to execute</span>
         <button
+          type="button"
           onClick={handleExecute}
           disabled={isDisabled || !query.trim()}
           className={styles.executeBtn}

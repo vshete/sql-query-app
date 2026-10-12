@@ -5,6 +5,8 @@ import {
 import { getAgentConfig } from "@/app/services/agentConfig";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { runQueryAgent } from "@/app/services/queryAgent";
+import { MAX_REQUEST_LENGTH } from "@/app/types/queryProtocol";
+import { isSameHostOrigin } from "@/app/services/requestOrigin";
 
 /**
  * Accepts a POST with a natural-language request and runs the query agent
@@ -19,12 +21,24 @@ export default async function handler(
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
   }
+  if (
+    req.headers.origin &&
+    !isSameHostOrigin(req.headers.origin, req.headers.host)
+  ) {
+    return res
+      .status(403)
+      .json({ error: "Cross-site requests are not allowed." });
+  }
 
   const request = req.body?.request;
-  if (typeof request !== "string" || !request.trim()) {
-    return res
-      .status(400)
-      .json({ error: "A natural-language request is required." });
+  if (
+    typeof request !== "string" ||
+    !request.trim() ||
+    request.length > MAX_REQUEST_LENGTH
+  ) {
+    return res.status(400).json({
+      error: `A request of 1–${MAX_REQUEST_LENGTH} characters is required.`,
+    });
   }
 
   try {

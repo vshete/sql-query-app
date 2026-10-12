@@ -7,6 +7,7 @@ import {
   getDatabaseConnection,
 } from "@/app/services/databaseConnections";
 import { getDatabaseSchema } from "@/app/services/databaseSchema";
+import { isSameHostOrigin } from "@/app/services/requestOrigin";
 
 /**
  * Manages the database connection identified by an HTTP-only cookie.
@@ -28,7 +29,7 @@ export default async function handler(
   if (
     req.method !== "GET" &&
     req.headers.origin &&
-    new URL(req.headers.origin).host !== req.headers.host
+    !isSameHostOrigin(req.headers.origin, req.headers.host)
   ) {
     return res
       .status(403)

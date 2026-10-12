@@ -10,26 +10,28 @@ export function useDefaultDatabaseConnection() {
   });
   const [isConnecting, setIsConnecting] = useState(true);
   const [connectionError, setConnectionError] = useState("");
-  const [attempt, setAttempt] = useState(0);
-  const retryConnection = useCallback(() => {
+  const [attempt, setAttempt] = useState({ id: 0, refresh: false });
+  const retryConnection = useCallback((refresh = false) => {
     setIsConnecting(true);
-    setAttempt((value) => value + 1);
+    setAttempt((value) => ({ id: value.id + 1, refresh }));
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     setConnectionError("");
-    loadDefaultConnection()
+    loadDefaultConnection(attempt.refresh)
       .then((value) => {
         if (!cancelled) setConnection(value);
       })
       .catch((error: unknown) => {
-        if (!cancelled)
+        if (!cancelled) {
+          setConnection({ connected: false });
           setConnectionError(
             error instanceof Error
               ? error.message
               : "Could not connect to the default database.",
           );
+        }
       })
       .finally(() => {
         if (!cancelled) setIsConnecting(false);

@@ -9,7 +9,7 @@
   --surface-inset: #080f20;
   --border: #283249;
   --text-muted: #a0abc3;
-  --text-subtle: #78859f;
+  --text-subtle: #8996b0;
   --primary: #c0c1ff;
   --primary-ink: #17145c;
   --primary-hover: #d3d3ff;
@@ -50,14 +50,6 @@ button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
-button,
-input,
-textarea,
-summary {
-  transition:
-    background-color 0.15s,
-    border-color 0.15s;
-}
 :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 3px;
@@ -67,6 +59,28 @@ summary {
   color: #fff;
 }
 * {
+  box-sizing: border-box;
   scrollbar-width: thin;
   scrollbar-color: var(--border) var(--surface-inset);
+}
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 12px;
+  background: var(--surface);
+  color: var(--foreground);
+  transform: translateY(-200%);
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+.workspace-error {
+  padding: 32px;
+}
+.workspace-error button {
+  min-height: 44px;
+  padding: 8px 16px;
 }
