@@ -1,19 +1,17 @@
 .ce-editor-mount {
-  --ce-color-surface: #ffffff;
-  --ce-color-surface-subtle: #f8fafc;
-  --ce-color-surface-active: #f1f5f9;
-  --ce-color-text: #1e293b;
-  --ce-color-text-muted: #64748b;
-  --ce-color-border: #cbd5e1;
-  --ce-color-border-subtle: #e2e8f0;
-  --ce-color-focus: #2563eb;
-  --ce-color-focus-ring: #1d4ed8;
-  --ce-color-selection: #dbeafe;
-  --ce-color-match: #dbeafe;
-  --ce-font-mono:
-    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    monospace;
-  --ce-radius-sm: 0.375rem;
+  --ce-color-surface: var(--surface-inset);
+  --ce-color-surface-subtle: var(--surface-inset);
+  --ce-color-surface-active: var(--surface);
+  --ce-color-text: var(--foreground);
+  --ce-color-text-muted: var(--text-subtle);
+  --ce-color-border: var(--border);
+  --ce-color-border-subtle: var(--border);
+  --ce-color-focus: var(--primary);
+  --ce-color-focus-ring: var(--primary);
+  --ce-color-selection: var(--selection);
+  --ce-color-match: var(--selection);
+  --ce-font-mono: var(--font-code);
+  --ce-radius-sm: 6px;
 }
 
 .ce-editor-mount .cm-scroller {
@@ -30,9 +28,9 @@
   width: 100%;
   padding: 8px 12px;
   border: 0;
-  border-top: 1px solid #d4dfdb;
-  background: #edf4f0;
-  color: #087f68;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--primary);
   font: inherit;
   font-size: 13px;
   text-align: left;
@@ -40,6 +38,6 @@
 }
 
 .ce-editor-toggle:focus-visible {
-  outline: 2px solid #087f68;
+  outline: 2px solid var(--primary);
   outline-offset: -2px;
 }

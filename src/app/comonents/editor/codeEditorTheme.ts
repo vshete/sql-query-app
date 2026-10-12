@@ -1,4 +1,6 @@
 import { EditorView } from "@codemirror/view";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { tags } from "@lezer/highlight";
 
 /**
  * An editor theme built on the CSS custom properties in codeEditorTheme.css.
@@ -8,6 +10,18 @@ import { EditorView } from "@codemirror/view";
  * styling entry point.
  */
 export const codeEditorTheme = [
+  syntaxHighlighting(
+    HighlightStyle.define([
+      { tag: tags.keyword, color: "var(--primary)" },
+      {
+        tag: [tags.string, tags.special(tags.string)],
+        color: "var(--success)",
+      },
+      { tag: [tags.number, tags.bool, tags.name], color: "var(--info)" },
+      { tag: tags.comment, color: "var(--text-muted)", fontStyle: "italic" },
+      { tag: [tags.operator, tags.punctuation], color: "var(--foreground)" },
+    ]),
+  ),
   EditorView.theme({
     "&": {
       backgroundColor: "var(--ce-color-surface)",

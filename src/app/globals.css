@@ -1,18 +1,72 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: dark;
+  --background: #0b1326;
+  --foreground: #dae2fd;
+  --surface: #131b2e;
+  --surface-raised: #1b2439;
+  --surface-inset: #080f20;
+  --border: #283249;
+  --text-muted: #a0abc3;
+  --text-subtle: #78859f;
+  --primary: #c0c1ff;
+  --primary-ink: #17145c;
+  --primary-hover: #d3d3ff;
+  --primary-surface: #292b4c;
+  --selection: #353963;
+  --success: #4edea3;
+  --info: #89ceff;
+  --error: #ffb4ab;
+  --error-surface: #321f2d;
+  --radius: 8px;
+  --explorer-width: 260px;
+  --font-ui: var(--font-geist-sans), Arial, sans-serif;
+  --font-code: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 html,
 body {
-  max-width: 100vw;
+  max-width: 100%;
+  min-height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+button,
+input,
+textarea,
+summary {
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+::selection {
+  background: #434777;
+  color: #fff;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--surface-inset);
 }

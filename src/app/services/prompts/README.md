@@ -10,4 +10,4 @@ These Markdown files are loaded by `queryPrompts.ts` and passed to the models an
 
 The entire file content is sent as the corresponding prompt or description; Markdown lists are supported. This README is not sent to the model. Schema and user request values are inserted as data, not loaded as system instructions.
 
-Keep this directory available at runtime, like `../resources/database-schema.txt`. System prompts and agent descriptions are read for each request; restart the server after changing MCP descriptions, which are registered at initialization.
+Keep this prompt directory available at runtime. Database schema metadata comes from PostgreSQL and is cached in server memory. System prompts and agent descriptions are read for each request; restart the server after changing MCP descriptions, which are registered at initialization.

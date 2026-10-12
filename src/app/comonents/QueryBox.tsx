@@ -1,46 +1,52 @@
 import { useEffect, useState } from "react";
+import { WorkspaceIcon } from "./WorkspaceIcon";
+import styles from "./AIQueryBuilder/queryAgent.module.css";
 
 type QueryBoxProps = {
-    onQueryExecute: (query: string) => void;
-    isDisabled?: boolean;
-    initialQuery?: string;
-}
+  onQueryExecute: (query: string) => void;
+  isDisabled?: boolean;
+  initialQuery?: string;
+};
 
-/**
- * A component that can be used to enter SQL queries.
- * @returns JSX.Element
- */
-export const QueryBox = ({ onQueryExecute, isDisabled, initialQuery = "" }: QueryBoxProps) => {
-    const [query, setQuery] = useState(initialQuery);
-
-    useEffect(() => {
-        setQuery(initialQuery);
-    }, [initialQuery]);
-
-    const handleExecute = () => {
-        if (query.trim()) onQueryExecute(query);
-    };
-
-    return (
-        <div className="query-box w-full mb-4 font-mono">
-            <textarea
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                disabled={isDisabled}
-                className="query-input w-full min-h-50 p-5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter your SQL query here..."
-            />
-            <button
-                onClick={handleExecute}
-                disabled={isDisabled || !query.trim()}
-                className={`execute-button mt-3 p-2 cursor-pointer rounded-md ${
-                    isDisabled || !query.trim()
-                        ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                        : "bg-blue-500 text-white hover:bg-blue-600"
-                }`}
-            >
-                Execute
-            </button>
-        </div>
-    );
+export const QueryBox = ({
+  onQueryExecute,
+  isDisabled,
+  initialQuery = "",
+}: QueryBoxProps) => {
+  const [query, setQuery] = useState(initialQuery);
+  useEffect(() => {
+    setQuery(initialQuery);
+  }, [initialQuery]);
+  const handleExecute = () => {
+    if (!isDisabled && query.trim()) onQueryExecute(query);
+  };
+  return (
+    <div className={styles.queryBox}>
+      <textarea
+        aria-label="SQL query"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        disabled={isDisabled}
+        className={styles.manualInput}
+        placeholder="SELECT * FROM your_table LIMIT 10;"
+        spellCheck={false}
+        onKeyDown={(event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+            event.preventDefault();
+            handleExecute();
+          }
+        }}
+      />
+      <div className={styles.editorActions}>
+        <span className={styles.shortcutHint}>Ctrl / ⌘ + Enter to execute</span>
+        <button
+          onClick={handleExecute}
+          disabled={isDisabled || !query.trim()}
+          className={styles.executeBtn}
+        >
+          <WorkspaceIcon name="play" size={14} /> Execute query
+        </button>
+      </div>
+    </div>
+  );
 };

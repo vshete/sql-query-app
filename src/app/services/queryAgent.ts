@@ -1,4 +1,7 @@
-import type { DatabaseQueryResult, QueryAgentResult } from "../types/query.types";
+import type {
+  DatabaseQueryResult,
+  QueryAgentResult,
+} from "../types/query.types";
 import { randomUUID } from "node:crypto";
 import { createQueryModel } from "./mocks/modelFactory";
 import { isMockModelEnabled } from "./mocks/mockMode";
@@ -7,14 +10,28 @@ import { createAgent } from "langchain";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { z } from "zod";
 import { loadQueryPrompts, type QueryPrompts } from "./queryPrompts";
-import { extractText, initializeMcpServer, QueryAgentOptions, QueryRequestContext, requestContexts } from "./queryAgentMCP";
-
+import { createQueryAgentMiddleware } from "./queryAgentMiddleware";
+import {
+  extractText,
+  initializeMcpServer,
+  QueryAgentOptions,
+  QueryRequestContext,
+  requestContexts,
+} from "./queryAgentMCP";
 
 function parseToolText(result: unknown): string {
-  if (typeof result !== "object" || result === null || !("content" in result) || !Array.isArray(result.content)) {
+  if (
+    typeof result !== "object" ||
+    result === null ||
+    !("content" in result) ||
+    !Array.isArray(result.content)
+  ) {
     throw new Error("MCP tool returned an unsupported result.");
   }
-  const toolResult = result as { content: Array<{ type?: string; text?: string }>; isError?: boolean };
+  const toolResult = result as {
+    content: Array<{ type?: string; text?: string }>;
+    isError?: boolean;
+  };
   const text = toolResult.content
     .filter((part) => part.type === "text")
     .map((part) => part.text ?? "")
@@ -23,10 +40,7 @@ function parseToolText(result: unknown): string {
   return text;
 }
 
-
 export type QueryAgentProvider = "gemini" | "openai";
-
-
 
 let mcpInitialization: Promise<Client> | undefined;
 
@@ -47,12 +61,23 @@ export async function runQueryAgent(
   options: QueryAgentOptions = {},
 ): Promise<QueryAgentResult> {
   const mockModel = isMockModelEnabled();
-  const model = createQueryModel({ provider, apiKey, modelName, mockModel, request });
+  const model = createQueryModel({
+    provider,
+    apiKey,
+    modelName,
+    mockModel,
+    request,
+  });
   const prompts = await loadQueryPrompts();
   const mcpClient = await getMcpClient(prompts);
   const requestId = randomUUID();
   const context: QueryRequestContext = {
-    model, prompts, options, generatedSQL: "", requiredTables: [],
+    model,
+    prompts,
+    options,
+    modelCalls: 0,
+    generatedSQL: "",
+    requiredTables: [],
   };
   requestContexts.set(requestId, context);
 
@@ -82,8 +107,9 @@ export async function runQueryAgent(
           name: "execute_query",
           arguments: { query, requestId },
         });
-        console.debug("PostgreSQL query result: ", result);
-        context.queryResult = JSON.parse(parseToolText(result)) as DatabaseQueryResult;
+        context.queryResult = JSON.parse(
+          parseToolText(result),
+        ) as DatabaseQueryResult;
         const end = performance.now();
         console.debug("PostgreSQL query execution time: ", end - start);
         return JSON.stringify(context.queryResult);
@@ -97,6 +123,7 @@ export async function runQueryAgent(
 
     const agent = createAgent({
       model,
+      middleware: [createQueryAgentMiddleware(context)],
       tools: [constructSqlTool, executeQueryTool],
       systemPrompt: prompts.queryAgent,
     });
@@ -106,7 +133,10 @@ export async function runQueryAgent(
     );
     for await (const event of events) {
       // SQL streams separately so agent text never enters the SQL editor.
-      if (event.event === "on_chat_model_stream" && !event.tags?.includes("sql-generation")) {
+      if (
+        event.event === "on_chat_model_stream" &&
+        !event.tags?.includes("sql-generation")
+      ) {
         const token = extractText(event.data.chunk?.content);
         if (token) options.onAgentToken?.(token);
       }
@@ -114,16 +144,20 @@ export async function runQueryAgent(
 
     const { generatedSQL, requiredTables, queryResult } = context;
     if (!generatedSQL || !queryResult) {
-      throw new Error("The query agent did not complete both required tool calls.");
+      throw new Error(
+        "The query agent did not complete both required tool calls.",
+      );
     }
 
     return {
       generatedSQL,
       explanation: mockModel
         ? "Generated using a mock model and executed against PostgreSQL."
-        : "Generated using the MCP schema resource and executed against PostgreSQL.",
+        : "Generated using the connected database schema and executed against PostgreSQL.",
       requiredTables,
-      warnings: queryResult.truncated ? ["Results are limited to the first 1,000 rows."] : [],
+      warnings: queryResult.truncated
+        ? ["Results are limited to the first 1,000 rows."]
+        : [],
       queryResult,
     };
   } finally {

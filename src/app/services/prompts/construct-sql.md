@@ -1,1 +1,1 @@
-Create a safe SQL SELECT from the user's request using the database schema resource.
+Create a safe PostgreSQL SELECT from the user's request using the cached live schema of the connected database.

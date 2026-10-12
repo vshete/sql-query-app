@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { memo, useEffect, useId, useRef, useState } from "react";
 import { EditorView } from "@codemirror/view";
@@ -7,7 +7,13 @@ import { createEditorState } from "./codeEditorConfig";
 import "./codeEditorTheme.css";
 
 /** SQL output stays selectable and copyable, but cannot be edited by the user. */
-export const CodeEditor = memo(function CodeEditor({ code, language }: { code: string; language: "sql" }) {
+export const CodeEditor = memo(function CodeEditor({
+  code,
+  language,
+}: {
+  code: string;
+  language: "sql";
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -25,7 +31,9 @@ export const CodeEditor = memo(function CodeEditor({ code, language }: { code: s
   useEffect(() => {
     if (!hostRef.current) return;
     const view = new EditorView({
-      state: createEditorState({ languageSupport: sql({ dialect: PostgreSQL }) }),
+      state: createEditorState({
+        languageSupport: sql({ dialect: PostgreSQL }),
+      }),
       parent: hostRef.current,
     });
     viewRef.current = view;
@@ -42,16 +50,30 @@ export const CodeEditor = memo(function CodeEditor({ code, language }: { code: s
     // Append streaming tokens without replacing the existing document.
     const append = code.startsWith(previous);
     view.dispatch({
-      changes: { from: append ? previous.length : 0, to: previous.length,
-        insert: append ? code.slice(previous.length) : code },
+      changes: {
+        from: append ? previous.length : 0,
+        to: previous.length,
+        insert: append ? code.slice(previous.length) : code,
+      },
     });
   }, [code]);
 
   return (
     <div className="ce-editor-preview">
-      <div ref={hostRef} id={editorId} className={`ce-editor-mount${expanded ? " ce-editor-expanded" : ""}`} aria-label={`Read-only ${language} output`} />
+      <div
+        ref={hostRef}
+        id={editorId}
+        className={`ce-editor-mount${expanded ? " ce-editor-expanded" : ""}`}
+        aria-label={`Read-only ${language} output`}
+      />
       {hasMoreLines && (
-        <button type="button" className="ce-editor-toggle" aria-expanded={expanded} aria-controls={editorId} onClick={() => setExpanded(value => !value)}>
+        <button
+          type="button"
+          className="ce-editor-toggle"
+          aria-expanded={expanded}
+          aria-controls={editorId}
+          onClick={() => setExpanded((value) => !value)}
+        >
           {expanded ? "Show less" : "Show more"}
         </button>
       )}

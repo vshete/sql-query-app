@@ -1,219 +1,233 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-    useReactTable,
-    getCoreRowModel,
-    getSortedRowModel,
-    getPaginationRowModel,
-    ColumnDef,
-    SortingState,
-    flexRender,
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getPaginationRowModel,
+  type ColumnDef,
+  type SortingState,
+  flexRender,
 } from "@tanstack/react-table";
 import { TableRow } from "./TableRow";
+import { WorkspaceIcon } from "./WorkspaceIcon";
+import styles from "./AIQueryBuilder/queryAgent.module.css";
 
 type QueryResultProps = {
-    /* A two-dimensional array representing the table */
-    data?: string[][];
-    errorMessage?: string;
-    initialPage?: number;
-    isDataLoading?: boolean;
-    onDownload?: () => void;
-    totalPages?: number;
-    onPageChange?: (page: number) => void;
-}
+  data?: string[][];
+  errorMessage?: string;
+  message?: string;
+  initialPage?: number;
+  isDataLoading?: boolean;
+  onDownload?: () => void;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
+};
 
-/**
- * A react component that renders the query results in a tabular format
- * @param {Object} props - The properties passed to the component
- * @param {Array} props.data - The data to be displayed in the table
- * @returns {JSX.Element} - The rendered component
- */
-export const QueryResult = React.memo(({
-    data,
-    errorMessage,
-    isDataLoading,
-    initialPage,
-    onDownload,
-    totalPages,
-    onPageChange
-}: QueryResultProps) => {
-
-    const columns: ColumnDef<string[]>[] = useMemo(() => data?.[0]?.map((col, colIndex) => ({
-        accessorKey: colIndex.toString(),
+export const QueryResult = React.memo(function QueryResult({
+  data,
+  errorMessage,
+  message,
+  isDataLoading,
+  initialPage = 1,
+  onDownload,
+  totalPages,
+  onPageChange,
+}: QueryResultProps) {
+  const columns = useMemo<ColumnDef<string[]>[]>(
+    () =>
+      data?.[0]?.map((col, index) => ({
+        accessorKey: index.toString(),
         header: col,
         cell: (info) => info.getValue(),
-        sortUndefined: 'last'
-    })), [data]) || [];
-
-    const tableData = useMemo(() => data?.slice(1), [data]) || [];
-
-    const [sorting, setSorting] = React.useState<SortingState>([]);
-    const [currentPage, setCurrentPage] = React.useState(1);
-
-    const table = useReactTable({
-        data: tableData,
-        columns,
-        state: {
-            sorting,
-            pagination: {
-                pageIndex: currentPage - 1, // Start at the first page
-                pageSize: 10, // Set a default page size
-            },
-        },
-        onSortingChange: setSorting, // Ideally sorting should be on entire data but since we have paginated data, only the data fetched so far will be sorted
-        getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getPaginationRowModel: getPaginationRowModel(), // Enable pagination
-        enableColumnResizing: true,
-        columnResizeMode: "onChange",
-    });
-
-    useEffect(() => {
-        if (initialPage) {
-            setCurrentPage(initialPage);
-        }
-    }, [initialPage]);
-
-    const goToPreviousPage = () => {
-        if (currentPage > 1) {
-            onPageChange?.(currentPage - 1);
-            setCurrentPage(currentPage - 1);
-        }
+        sortUndefined: "last",
+      })) ?? [],
+    [data],
+  );
+  const tableData = useMemo(() => data?.slice(1) ?? [], [data]);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const pageCount = Math.max(1, totalPages ?? Math.ceil(tableData.length / 10));
+  const page = Math.min(currentPage, pageCount);
+  const table = useReactTable({
+    data: tableData,
+    columns,
+    state: { sorting, pagination: { pageIndex: page - 1, pageSize: 10 } },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: !!onPageChange,
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
+  });
+  useEffect(() => {
+    setCurrentPage(initialPage);
+  }, [initialPage, data]);
+  const changePage = (nextPage: number) => {
+    setCurrentPage(nextPage);
+    onPageChange?.(nextPage);
+  };
+  const { columnSizing } = table.getState();
+  const columnSizeVars = useMemo(() => {
+    const sizes: Record<string, number> = {};
+    for (const header of table.getFlatHeaders()) {
+      sizes[`--header-${header.id}-size`] = header.getSize();
+      sizes[`--col-${header.column.id}-size`] = header.column.getSize();
     }
-    
-    const goToNextPage = () => {
-        if (totalPages && currentPage < totalPages) {
-            onPageChange?.(currentPage + 1);
-            setCurrentPage(currentPage + 1);
-        }
-    }
+    return sizes;
+    // The table instance is stable; sizing and columns invalidate these widths.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table, columnSizing, columns]);
+  const rowCount = tableData.length;
+  const hasRows = rowCount > 0;
+  const visibleRows = table.getRowModel().rows;
 
-    const { columnSizing } = table.getState();
-    const columnSizeVars = React.useMemo(() => {
-        const colSizes: Record<string, number> = {};
-        for (const header of table.getFlatHeaders()) {
-            colSizes[`--header-${header.id}-size`] = header.getSize();
-            colSizes[`--col-${header.column.id}-size`] = header.column.getSize();
-        }
-        return colSizes;
-        // TanStack keeps the table instance stable; sizing state invalidates cached widths.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [table, columnSizing]);
-
-    if (errorMessage) {
-        return <div className="query-result text-red-500">{errorMessage}</div>;
-    }
-
-    if (!data && isDataLoading) {
-        return (
-            <div className="query-result flex justify-center items-center mt-10">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-                <span className="ml-4 text-gray-500">Loading...</span>
-            </div>
-        );
-    }
-
-    if (data === undefined) {
-        return (
-            <div className="query-result text-gray-500 mt-10">
-                Your query results will appear here.
-            </div>
-        );
-    }
-
-    if (data.length === 0) {
-        return (
-            <div className="query-result text-center text-gray-500">
-                No results found.
-            </div>
-        );
-    }
-
-    return (
-        <div>
-            <div>
-                <button onClick={onDownload} className="bg-blue-500 text-white p-2 rounded mb-4 cursor-pointer">
-                    Download Results
-                </button>
-            </div>
-            <div className="query-result w-full overflow-x-auto scroll-smooth">
-                <table className="table-fixed w-full border-collapse border border-gray-300" style={{ ...columnSizeVars }}>
-                    <thead>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <tr key={headerGroup.id} className="bg-gray-200">
-                                {headerGroup.headers.map((header) => (
-                                    <th
-                                        key={header.id}
-                                        className="border border-gray-300 py-5 px-3 text-left whitespace-nowrap group relative overflow-hidden"
-                                        style={{
-                                            width: columnSizeVars[`--header-${header.id}-size`] ? `calc(var(--header-${header?.id}-size) * 1px)` : 'auto',
-                                        }}
-                                    >
-
-                                        {/* The data will be fetched in the order specified in the query by the user */}
-                                        {/* If the data is really to be sorted based on column, first the entire dataset should be fetched. Make that modification on this click */}
-                                        <span onClick={header.column.getToggleSortingHandler()} className="cursor-pointer">
-                                            {
-                                                header.column.getCanSort()
-                                                    ? header.column.getNextSortingOrder() === 'asc'
-                                                        ? '⥮'
-                                                        : header.column.getNextSortingOrder() === 'desc'
-                                                            ? '⇑'
-                                                            : '⇓'
-                                                    : undefined
-                                            }
-                                        </span>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                header.column.columnDef.header,
-                                                header.getContext()
-                                            )}
-                                        <div
-                                            {...{
-                                                onDoubleClick: () => header.column.resetSize(),
-                                                onMouseDown: header.getResizeHandler(),
-                                                onTouchStart: header.getResizeHandler(),
-                                                className: `resizer absolute top-0 h-full right-0 w-[5px] cursor-col-resize select-none touch-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${header.column.getIsResizing() ? 'bg-blue-500 opacity-100' : 'bg-black bg-opacity-50'}`,
-                                            }}
-                                        />
-                                    </th>
-                                ))}
-                            </tr>
-                        ))}
-                    </thead>
-                    <tbody>
-                        {table.getRowModel().rows.map((row) => (
-                            <TableRow key={row.id} columnSizeVars={columnSizeVars} row={row} />
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            {/* Pagination Controls */}
-            <div className="pagination-controls mt-4">
-                <button
-                    className={`${currentPage === 1 ? 'cursor-text' : 'cursor-pointer'} cursor-pointer px-4 py-2 mr-5 bg-blue-200 rounded disabled:opacity-50`}
-                    onClick={() => goToPreviousPage()}
-                    disabled={currentPage === 1}
-                >
-                    Previous
-                </button>
-                <span className="mr-5">
-                    Page{" "}
-                    <strong>
-                        {table.getState().pagination.pageIndex + 1} of{" "}
-                        {totalPages}
-                    </strong>
-                </span>
-                <button
-                    className={`${!!totalPages && currentPage >= totalPages ? 'cursor-text' : 'cursor-pointer'} px-4 py-2 bg-blue-200 rounded disabled:opacity-50`}
-                    onClick={() => goToNextPage()}
-                    disabled={!!totalPages && currentPage >= totalPages}
-                >
-                    Next
-                </button>
-            </div>
+  return (
+    <div className={styles.resultsPanel} aria-busy={isDataLoading || false}>
+      <div className={styles.resultsToolbar}>
+        <div className={styles.resultsTitle}>
+          <WorkspaceIcon name={data && !errorMessage ? "check" : "table"} />
+          <span>Query results</span>
+          {data && !errorMessage && (
+            <span className={styles.rowCount}>
+              {rowCount.toLocaleString()} rows loaded
+            </span>
+          )}
         </div>
-    );
+        {onDownload && data && !errorMessage && (
+          <button
+            className={styles.downloadBtn}
+            onClick={onDownload}
+            disabled={isDataLoading}
+          >
+            <WorkspaceIcon name="download" size={14} /> Download CSV
+          </button>
+        )}
+      </div>
+      {message && !errorMessage && (
+        <p className={styles.resultsMessage}>{message}</p>
+      )}
+      {errorMessage ? (
+        <div className={styles.error} role="alert">
+          {errorMessage}
+        </div>
+      ) : isDataLoading && !data ? (
+        <div className={styles.emptyResults} role="status">
+          <span className={styles.generationSpinner} />
+          <strong>Running your query…</strong>
+          <p>Results will appear here when execution finishes.</p>
+        </div>
+      ) : !hasRows ? (
+        <div className={styles.emptyResults}>
+          <WorkspaceIcon name="table" size={26} />
+          <strong>
+            {data ? "No rows returned" : "Ready for your first query"}
+          </strong>
+          <p>
+            {data
+              ? "Your query completed without returning rows."
+              : "Generate a query to explore your data."}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className={styles.tableScroll}>
+            <table
+              className={styles.resultTable}
+              aria-label="Query results"
+              style={{ ...columnSizeVars, minWidth: table.getTotalSize() }}
+            >
+              <thead>
+                {table.getHeaderGroups().map((group) => (
+                  <tr key={group.id}>
+                    {group.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        scope="col"
+                        aria-sort={
+                          header.column.getIsSorted() === "asc"
+                            ? "ascending"
+                            : header.column.getIsSorted() === "desc"
+                              ? "descending"
+                              : "none"
+                        }
+                        style={{
+                          width: `calc(var(--header-${header.id}-size) * 1px)`,
+                        }}
+                      >
+                        {header.isPlaceholder ? null : (
+                          <button
+                            className={styles.sortButton}
+                            onClick={header.column.getToggleSortingHandler()}
+                            disabled={!header.column.getCanSort()}
+                            title={`Sort ${String(header.column.columnDef.header)} (loaded rows)`}
+                          >
+                            <span>
+                              {flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
+                            </span>
+                            <span aria-hidden="true">
+                              {header.column.getIsSorted() === "asc"
+                                ? "↑"
+                                : header.column.getIsSorted() === "desc"
+                                  ? "↓"
+                                  : "↕"}
+                            </span>
+                          </button>
+                        )}
+                        <div
+                          onDoubleClick={() => header.column.resetSize()}
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          className={`${styles.resizer} ${header.column.getIsResizing() ? styles.resizing : ""}`}
+                          aria-hidden="true"
+                        />
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {visibleRows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    columnSizeVars={columnSizeVars}
+                    row={row}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className={styles.resultsFooter}>
+            <span>
+              Showing {(page - 1) * 10 + 1}–
+              {(page - 1) * 10 + visibleRows.length}
+              {!onPageChange && ` of ${rowCount}`} rows
+            </span>
+            <nav className={styles.pagination} aria-label="Results pagination">
+              <span aria-live="polite">
+                Page {page} of {pageCount}
+              </span>
+              <button
+                className={styles.pageBtn}
+                onClick={() => changePage(page - 1)}
+                disabled={page <= 1 || isDataLoading}
+              >
+                Previous
+              </button>
+              <button
+                className={styles.pageBtn}
+                onClick={() => changePage(page + 1)}
+                disabled={page >= pageCount || isDataLoading}
+              >
+                Next
+              </button>
+            </nav>
+          </div>
+        </>
+      )}
+    </div>
+  );
 });
-
-QueryResult.displayName = "QueryResult";

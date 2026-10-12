@@ -1,32 +1,26 @@
-'use client'
-import { QueryResult } from "./QueryResult";
-import { useFetchQueryResults } from "../hooks/useFetchQueryResults";
-import { useState } from "react";
-import { useFileDownload } from "../hooks/useFileDownload";
+"use client";
+import Link from "next/link";
 import NaturalLanguageInput from "./AIQueryBuilder/NaturalLanguageInput";
+import { WorkspaceIcon } from "./WorkspaceIcon";
+import styles from "./AIQueryBuilder/queryAgent.module.css";
 
-/**
- * Root component of the application.
- */
-export const AppEntry = () => {
-    const [currentPage, setCurrentPage] = useState(1);
-    const { data, isDataLoading, errorMessage, totalPages } = useFetchQueryResults(currentPage);
-    const { onDownload } = useFileDownload();
-
-    return (
-        <main className="w-full p-5 font-mono">
-            <NaturalLanguageInput
-                isLoading={isDataLoading}
-            />
-            <QueryResult
-                initialPage={currentPage === 1 ? currentPage : undefined}
-                data={data}
-                errorMessage={errorMessage}
-                isDataLoading={isDataLoading}
-                onDownload={onDownload}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-            />
-        </main>
-    );
-};
+export const AppEntry = () => (
+  <div className={styles.appShell}>
+    <header className={styles.appHeader}>
+      <Link href="/" className={styles.brand} aria-label="Query Studio home">
+        <span className={styles.brandIcon}>
+          <WorkspaceIcon name="terminal" size={18} />
+        </span>
+        Query Studio
+      </Link>
+      <span className={styles.headerDivider} />
+      <span className={styles.headerCaption}>SQL workspace</span>
+      <span className={styles.headerMeta}>
+        PostgreSQL <span> / </span> AI assisted
+      </span>
+    </header>
+    <main className={styles.workspace}>
+      <NaturalLanguageInput />
+    </main>
+  </div>
+);
