@@ -1,18 +1,11 @@
-import { parseQueryHistory } from "./src/app/services/queryConversation";
 import next from "next";
 import { createServer } from "node:http";
-import { WebSocket, WebSocketServer } from "ws";
-import { getAgentConfig } from "./src/app/services/agentConfig";
-import { getDatabase } from "./src/app/services/database";
+import { WebSocketServer } from "ws";
+import { handleQuerySocket } from "./src/app/services/querySocket";
 import { initializeDatabase } from "./src/app/services/databaseInitialization";
 import { configureMockModelMode } from "./src/app/services/mocks/mockMode";
-import { runQueryAgent } from "./src/app/services/queryAgent";
 import { isSameHostOrigin } from "./src/app/services/requestOrigin";
-import {
-  AGENT_TIMEOUT_MS,
-  MAX_REQUEST_LENGTH,
-  MAX_REQUEST_PAYLOAD_BYTES,
-} from "./src/app/types/queryProtocol";
+import { MAX_REQUEST_PAYLOAD_BYTES } from "./src/app/types/queryProtocol";
 
 async function main() {
   const dev = process.env.NODE_ENV !== "production";
@@ -46,64 +39,8 @@ async function main() {
     );
   });
 
-  wss.on("connection", (ws) => {
-    const controller = new AbortController();
-    let started = false;
-    const deadline = setTimeout(() => {
-      send({ type: "error", error: "Query generation timed out." });
-      controller.abort();
-      ws.close();
-    }, AGENT_TIMEOUT_MS);
-    function send(event: unknown) {
-      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
-    }
-    ws.on("close", () => {
-      clearTimeout(deadline);
-      controller.abort();
-    });
-    ws.on("error", () => controller.abort());
-    ws.on("message", async (data) => {
-      if (started) return;
-      started = true;
-      try {
-        const payload = JSON.parse(data.toString());
-        if (
-          typeof payload.request !== "string" ||
-          !payload.request.trim() ||
-          payload.request.length > MAX_REQUEST_LENGTH
-        ) {
-          throw new Error("A request of 1–10000 characters is required.");
-        }
-        const history = parseQueryHistory(payload.history);
-        const database = getDatabase();
-        const { provider, apiKey, model } = getAgentConfig();
-        const result = await runQueryAgent(
-          payload.request.trim(),
-          provider,
-          apiKey,
-          model,
-          {
-            history,
-            summarizeResults: true,
-            database,
-            signal: controller.signal,
-            onSqlStart: () => send({ type: "sql_start" }),
-            onToken: (token) => send({ type: "token", token }),
-            onAgentToken: (token) => send({ type: "agent_token", token }),
-          },
-        );
-        send({ type: "result", result });
-      } catch (error) {
-        send({
-          type: "error",
-          error: error instanceof Error ? error.message : "Query agent failed.",
-        });
-      } finally {
-        clearTimeout(deadline);
-        ws.close();
-      }
-    });
-  });
+  wss.on("connection", handleQuerySocket);
+
   server.listen(port, () =>
     console.log(`Query app listening on http://localhost:${port}`),
   );
