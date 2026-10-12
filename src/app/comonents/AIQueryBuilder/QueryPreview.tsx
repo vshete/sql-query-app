@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { memo } from "react";
+import { memo, useMemo } from "react";
+import { format } from "sql-formatter";
 import { WorkspaceIcon } from "../WorkspaceIcon";
 import styles from "./queryAgent.module.css";
 
@@ -25,6 +26,16 @@ export const QueryPreview = memo(function QueryPreview({
   isGenerating: boolean;
   error: string | null;
 }) {
+  const displaySql = useMemo(() => {
+    if (!sql || isGenerating || error) return sql;
+    try {
+      return format(sql, { language: "postgresql", tabWidth: 2 });
+    } catch {
+      // Keep the preview available for syntax the formatter cannot handle.
+      return sql;
+    }
+  }, [sql, isGenerating, error]);
+
   return (
     <section className={styles.sqlPreview} aria-label="SQL generation preview">
       <div className={styles.editorHeading}>
@@ -39,7 +50,7 @@ export const QueryPreview = memo(function QueryPreview({
         <span className={styles.editorMeta}>READ-ONLY PREVIEW</span>
       </div>
       <div className={styles.sqlEditor}>
-        <CodeEditor code={sql} />
+        <CodeEditor code={displaySql} />
       </div>
     </section>
   );

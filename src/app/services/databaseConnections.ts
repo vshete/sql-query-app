@@ -46,6 +46,9 @@ export function getDatabaseConnection(id?: string): Connection {
   return connection;
 }
 
+/**
+ * This was designed to connect to multiple databses but currently only connecting to one db  
+ */
 export async function connectDatabase() {
   const connectionString = process.env.DATABASE_URL;
   if (typeof connectionString !== "string" || connectionString.length > 4096)
