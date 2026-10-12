@@ -2,9 +2,9 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import assert from "node:assert/strict";
 import { mock, test } from "node:test";
 import { Sequelize } from "sequelize";
-import handler from "../pages/api/database/schema";
 import { getDatabase } from "../src/app/services/database";
 import { initializeDatabase } from "../src/app/services/databaseInitialization";
+import handler from "../src/pages/api/database/schema";
 
 async function request(method: string, origin?: string) {
   const headers = new Map<string, unknown>();

@@ -149,9 +149,9 @@ test(
 );
 
 test("SQL and CSV endpoints execute against the server pool without a browser connection cookie", async () => {
-  const { default: queryHandler } = await import("../pages/api/post/query");
+  const { default: queryHandler } = await import("../src/pages/api/post/query");
   const { default: downloadHandler } =
-    await import("../pages/api/post/download");
+    await import("../src/pages/api/post/download");
   const connect = mockDatabaseClient(async () => ({
     query: async (query: string | { text: string }) => {
       const sql = typeof query === "string" ? query : query.text;
