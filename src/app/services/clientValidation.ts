@@ -1,4 +1,3 @@
-import type { ConnectionInfo } from "../types/databaseConnection.types";
 import type { SchemaTable } from "../types/databaseSchema.types";
 import type {
   DatabaseQueryResult,
@@ -43,24 +42,15 @@ function isSchemaTable(value: unknown): value is SchemaTable {
   );
 }
 
-export function parseConnectionInfo(value: unknown): ConnectionInfo {
+export function parseSchemaInfo(value: unknown): { tables: SchemaTable[] } {
   if (
     !isRecord(value) ||
-    typeof value.connected !== "boolean" ||
-    (value.label !== undefined && typeof value.label !== "string") ||
-    (value.tableCount !== undefined &&
-      !(
-        typeof value.tableCount === "number" &&
-        Number.isSafeInteger(value.tableCount) &&
-        value.tableCount >= 0
-      )) ||
-    (value.tables !== undefined &&
-      !(Array.isArray(value.tables) && value.tables.every(isSchemaTable))) ||
-    (value.connected && !Array.isArray(value.tables))
+    !Array.isArray(value.tables) ||
+    !value.tables.every(isSchemaTable)
   ) {
-    throw new Error("Invalid database connection response.");
+    throw new Error("Invalid database schema response.");
   }
-  return value as unknown as ConnectionInfo;
+  return { tables: value.tables as SchemaTable[] };
 }
 
 export function parseQueryResult(value: unknown): DatabaseQueryResult {

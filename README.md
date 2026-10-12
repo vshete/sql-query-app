@@ -15,7 +15,7 @@ cp env.example .env
 npm run dev
 ```
 
-Set your provider, API key, and PostgreSQL connection URL as `DATABASE_URL` in `.env`, then open http://localhost:3000. The page connects automatically to the configured database. Restart the server after changing `.env`. The URL stays on the server; users cannot select or enter a different URL in the UI.
+Set your provider, API key, and PostgreSQL connection URL as `DATABASE_URL` in `.env`, then open http://localhost:3000. The server authenticates its shared database pool and loads the schema before accepting requests. The page renders immediately while reading cached schema metadata in the background. Restart the server after changing `.env`. The URL stays on the server; users cannot select or enter a different URL in the UI.
 For production, run `npm run build` followed by `npm start`.
 
 To mock model calls during development:
@@ -216,26 +216,26 @@ most of a short query. The app forwards chunks immediately without synthesizing 
 typing animation. `npm run test:stream` verifies callbacks fire while streamed
 provider responses are still open, through the LangChain agent and MCP tools.
 
-### Connect to the default database
+### Server database and schema refresh
 
 Set `DATABASE_URL` in `.env` to your connection URL, including its SSL parameters.
-Restart the server, then open the app. On page load, the app reuses the existing browser session
-or connects automatically to the default database. There is no connection panel or manual SQL editor
-in the workspace. Connection failures show an error with a retry action.
+Restart the server after configuration changes. Startup authenticates the shared
+Sequelize pool and loads the schema before listening; a database or schema failure
+prevents startup. Browser sessions do not connect, disconnect, or own database pools.
 
-The server discovers accessible tables/views, columns, defaults, and constraints. Schema
-metadata is cached per connection for five minutes and is loaded automatically with the connection.
-The left-hand schema explorer shows discovered tables and columns without an additional model call.
-The agent executes against that same connection and displays up to 1,000 rows with pagination
-and CSV export. No schema file or MCP schema resource is read.
+The query workspace is enabled immediately. The schema explorer reads cached metadata
+from `GET /api/database/schema` in the background. Refresh sends `POST` to the same
+endpoint to update the shared schema used by both the explorer and the agent. Metadata
+stays cached until explicit refresh or server restart, so page loads do not query the
+catalogs again. A failed refresh keeps the last successful schema available.
 
-Sequelize instances are cached by database URL in server memory and manage their own pools
-(up to 10 connections, with idle connections released after 30 seconds). An HttpOnly cookie
-identifies each browser's session. The cookie lasts one hour; idle sessions expire after an hour.
-Disconnecting a session preserves the shared Sequelize instance for other requests.
-The instance cache and sessions are lost on server restart. The URL's host is resolved from the server, not the browser. This in-memory setup
-expects a single server process (or sticky routing). Mock-model mode still generates the fixed
-demo SQL; use the real model for arbitrary schemas.
+Queries and CSV exports use the same server-configured pool without connection cookies.
+The pool allows up to 10 connections and releases idle connections after 30 seconds;
+Sequelize handles acquiring connections as needed. Results include up to 1,000 rows.
+
+Mock mode still requires a real PostgreSQL database. Its deterministic queries target
+the demo SQL; use the real model for arbitrary schemas.
+
 
 `POST /api/post/query` now returns structured real database results (`columns`, `rows`,
 `rowCount`, `truncated`, `message`). `POST /api/post/download` requires a `query` and exports

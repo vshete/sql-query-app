@@ -4,7 +4,6 @@ import {
   useAIQueryGeneration,
   type QueryTurn,
 } from "@/app/hooks/useAIQueryGeneration";
-import type { useDefaultDatabaseConnection } from "@/app/hooks/useDefaultDatabaseConnection";
 import dynamic from "next/dynamic";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { QueryResult } from "../QueryResult";
@@ -18,21 +17,17 @@ const AgentResponse = dynamic(() => import("./AgentResponse"), {
 });
 
 interface NaturalLanguageInputProps {
-  databaseConnection: ReturnType<typeof useDefaultDatabaseConnection>;
   onGeneratingChange?: (generating: boolean) => void;
   isLoading?: boolean;
   placeholder?: string;
 }
 
 export default function NaturalLanguageInput({
-  databaseConnection,
   onGeneratingChange,
   isLoading = false,
   placeholder = "Describe what data you need... e.g., 'Show me all active users with their recent orders'",
 }: NaturalLanguageInputProps) {
   const [input, setInput] = useState("");
-  const { connection, isConnecting, connectionError, retryConnection } =
-    databaseConnection;
   const {
     generateQuery,
     reset,
@@ -54,9 +49,7 @@ export default function NaturalLanguageInput({
     });
   }, [request, result]);
 
-  const disabled =
-    !connection.connected || isConnecting || isGenerating || isLoading;
-  const reconnect = useCallback(() => retryConnection(), [retryConnection]);
+  const disabled = isGenerating || isLoading;
 
   useEffect(() => {
     onGeneratingChange?.(isGenerating);
@@ -121,11 +114,8 @@ export default function NaturalLanguageInput({
           input={input}
           onInputChange={setInput}
           onGenerate={handleGenerateQuery}
-          onRetryConnection={reconnect}
           disabled={disabled}
           isGenerating={isGenerating || isLoading}
-          isConnecting={isConnecting}
-          connectionError={connectionError}
           placeholder={placeholder}
         />
         {isGenerating && (

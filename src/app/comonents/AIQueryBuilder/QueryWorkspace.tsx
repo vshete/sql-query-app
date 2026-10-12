@@ -1,33 +1,25 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { useDefaultDatabaseConnection } from "@/app/hooks/useDefaultDatabaseConnection";
+import { useState } from "react";
+import { useDatabaseSchema } from "@/app/hooks/useDatabaseSchema";
 import NaturalLanguageInput from "./NaturalLanguageInput";
 import SchemaExplorer from "./SchemaExplorer";
 import styles from "./queryAgent.module.css";
 
 export default function QueryWorkspace() {
-  const databaseConnection = useDefaultDatabaseConnection();
-  const { connection, isConnecting, retryConnection } = databaseConnection;
+  const { tables, isLoading, error, refreshSchema } = useDatabaseSchema();
   const [isGenerating, setIsGenerating] = useState(false);
-  const refreshConnection = useCallback(
-    () => retryConnection(true),
-    [retryConnection],
-  );
 
   return (
     <div className={styles.workspaceLayout}>
       <SchemaExplorer
-        key={connection.label ?? "disconnected"}
-        connection={connection}
-        isLoading={isConnecting}
-        onRefresh={refreshConnection}
+        tables={tables}
+        isLoading={isLoading}
+        error={error}
+        onRefresh={refreshSchema}
         refreshDisabled={isGenerating}
       />
-      <NaturalLanguageInput
-        databaseConnection={databaseConnection}
-        onGeneratingChange={setIsGenerating}
-      />
+      <NaturalLanguageInput onGeneratingChange={setIsGenerating} />
     </div>
   );
 }

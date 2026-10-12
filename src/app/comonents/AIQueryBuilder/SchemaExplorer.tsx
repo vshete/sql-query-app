@@ -1,17 +1,19 @@
 "use client";
 
-import { memo, useId, useMemo, useState, useDeferredValue } from "react";
-import type { ConnectionInfo } from "@/app/types/databaseConnection.types";
+import type { SchemaTable } from "@/app/types/databaseSchema.types";
+import { memo, useDeferredValue, useId, useMemo, useState } from "react";
 import { WorkspaceIcon } from "../WorkspaceIcon";
 import styles from "./queryAgent.module.css";
 
 export default memo(function SchemaExplorer({
-  connection,
+  tables,
+  error,
   isLoading,
   onRefresh,
   refreshDisabled,
 }: {
-  connection: ConnectionInfo;
+  tables: SchemaTable[];
+  error: string;
   isLoading: boolean;
   onRefresh: () => void;
   refreshDisabled: boolean;
@@ -21,8 +23,8 @@ export default memo(function SchemaExplorer({
   const id = useId();
   const titleId = `${id}-title`;
   const groups = useMemo(() => {
-    const schemas = new Map<string, NonNullable<ConnectionInfo["tables"]>>();
-    for (const table of connection.tables ?? []) {
+    const schemas = new Map<string, SchemaTable[]>();
+    for (const table of tables) {
       if (
         search &&
         !`${table.schema}.${table.name}`.toLowerCase().includes(search) &&
@@ -36,7 +38,7 @@ export default memo(function SchemaExplorer({
       schemas.set(table.schema, tables);
     }
     return [...schemas.entries()];
-  }, [connection.tables, search]);
+  }, [tables, search]);
 
   return (
     <aside
@@ -52,11 +54,7 @@ export default memo(function SchemaExplorer({
           onClick={onRefresh}
           disabled={isLoading || refreshDisabled}
         >
-          {isLoading
-            ? "Updating…"
-            : connection.connected
-              ? "Refresh"
-              : "Reconnect"}
+          {isLoading ? "Updating…" : "Refresh"}
         </button>
       </div>
       <label className={styles.explorerFilterLabel} htmlFor={id}>
@@ -69,17 +67,16 @@ export default memo(function SchemaExplorer({
         placeholder="Filter tables or columns…"
         value={filter}
         onChange={(event) => setFilter(event.target.value)}
-        disabled={!connection.connected}
       />
       <div className={styles.explorerTree}>
-        {!connection.connected ? (
+        {!tables.length ? (
           <p className={styles.explorerEmpty} role="status">
             {isLoading
-              ? "Loading connection…"
-              : "Database unavailable. Retry the connection to explore its schema."}
+              ? "Loading schema…"
+              : error
+                ? "Schema unavailable. Use Refresh to retry."
+                : "No accessible tables or views."}
           </p>
-        ) : !connection.tables?.length ? (
-          <p className={styles.explorerEmpty}>No accessible tables or views.</p>
         ) : !groups.length ? (
           <p className={styles.explorerEmpty} role="status">
             No tables or columns match “{filter}”.
@@ -125,20 +122,15 @@ export default memo(function SchemaExplorer({
           ))
         )}
       </div>
+      {error && (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      )}
       <div className={styles.explorerFooter}>
-        <span
-          className={`${styles.connectionStatus} ${connection.connected ? styles.connected : ""}`}
-        >
-          <span className={styles.statusDot} />
-          {isLoading
-            ? "Updating schema…"
-            : connection.connected
-              ? `${connection.tables?.length ?? 0} tables / views`
-              : "No database connected"}
+        <span className={styles.connectionStatus} role="status">
+          {isLoading ? "Updating schema…" : `${tables.length} tables / views`}
         </span>
-        {connection.connected && (
-          <p title={connection.label}>{connection.label}</p>
-        )}
       </div>
     </aside>
   );

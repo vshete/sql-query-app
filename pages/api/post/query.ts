@@ -1,14 +1,10 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { executeDatabaseQuery } from "@/app/services/database";
+import { executeDatabaseQuery, getDatabase } from "@/app/services/database";
 import { isSameHostOrigin } from "@/app/services/requestOrigin";
-import {
-  connectionIdFromCookie,
-  getDatabaseConnection,
-} from "@/app/services/databaseConnections";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 /**
- * Accepts a POST with a SQL query, executes it using the database connection
- * identified by the request cookie, and returns the query result as JSON.
+ * Accepts a POST with a SQL query, executes it using the server-owned pool,
+ * and returns the query result as JSON.
  * Rejects missing queries and reports connection or execution errors.
  */
 export default async function handler(
@@ -30,9 +26,7 @@ export default async function handler(
   if (typeof req.body?.query !== "string" || !req.body.query.trim())
     return res.status(400).json({ error: "A SQL query is required." });
   try {
-    const { database } = getDatabaseConnection(
-      connectionIdFromCookie(req.headers.cookie),
-    );
+    const database = getDatabase();
     const result = await executeDatabaseQuery(
       req.body.query,
       undefined,

@@ -1,16 +1,13 @@
-import {
-  connectionIdFromCookie,
-  getDatabaseConnection,
-} from "@/app/services/databaseConnections";
 import { getAgentConfig } from "@/app/services/agentConfig";
-import type { NextApiRequest, NextApiResponse } from "next";
+import { getDatabase } from "@/app/services/database";
 import { runQueryAgent } from "@/app/services/queryAgent";
-import { MAX_REQUEST_LENGTH } from "@/app/types/queryProtocol";
 import { isSameHostOrigin } from "@/app/services/requestOrigin";
+import { MAX_REQUEST_LENGTH } from "@/app/types/queryProtocol";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 /**
  * Accepts a POST with a natural-language request and runs the query agent
- * using the configured provider/model and the cookie's database connection.
+ * using the configured provider/model and server-owned database pool.
  * Returns the agent result as JSON, or an error for invalid input or failures.
  */
 export default async function handler(
@@ -42,9 +39,7 @@ export default async function handler(
   }
 
   try {
-    const { database } = getDatabaseConnection(
-      connectionIdFromCookie(req.headers.cookie),
-    );
+    const database = getDatabase();
     const { provider, apiKey, model } = getAgentConfig();
     const result = await runQueryAgent(
       request.trim(),

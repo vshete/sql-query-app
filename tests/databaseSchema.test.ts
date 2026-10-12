@@ -1,5 +1,5 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
+import { test } from "node:test";
 import type { Sequelize } from "sequelize";
 import { getDatabaseSchema } from "../src/app/services/databaseSchema";
 import { cleanAndValidateSql } from "../src/app/services/sqlValidation";
@@ -47,7 +47,7 @@ test("schema cache deduplicates concurrent fetches, refreshes, and isolates pool
   assert.deepEqual((await getDatabaseSchema(other)).suggestions, []);
 });
 
-test("failed schema fetches can retry and expired schemas refresh", async () => {
+test("failed schema fetches retry and cached schemas remain until explicit refresh", async () => {
   let calls = 0;
   const pool = {
     query: async () => {
@@ -58,7 +58,9 @@ test("failed schema fetches can retry and expired schemas refresh", async () => 
   await assert.rejects(getDatabaseSchema(pool), /offline/);
   const value = await getDatabaseSchema(pool);
   value.fetchedAt = Date.now() - 6 * 60_000;
-  await getDatabaseSchema(pool);
+  assert.equal(await getDatabaseSchema(pool), value);
+  assert.equal(calls, 2);
+  await getDatabaseSchema(pool, true);
   assert.equal(calls, 3);
 });
 
@@ -76,4 +78,20 @@ test("dynamic table validation accepts qualified identifiers and rejects other t
     () => cleanAndValidateSql("DELETE FROM analytics.events", allowed),
     /read-only/,
   );
+});
+
+test("a failed explicit refresh preserves the last successful shared schema", async () => {
+  let unavailable = false;
+  const pool = {
+    query: async () => {
+      if (unavailable) throw new Error("offline");
+      return [table];
+    },
+  } as unknown as Sequelize;
+  const cached = await getDatabaseSchema(pool);
+  unavailable = true;
+  await assert.rejects(getDatabaseSchema(pool, true), /offline/);
+  assert.equal(await getDatabaseSchema(pool), cached);
+  unavailable = false;
+  assert.notEqual(await getDatabaseSchema(pool, true), cached);
 });

@@ -24,7 +24,6 @@ const cache = (state.queryAppSchemaCache ??= new WeakMap<
   CacheEntry
 >());
 
-const TTL = 5 * 60_000;
 const quote = (name: string) => `"${name.replaceAll('"', '""')}"`;
 
 export async function getDatabaseSchema(
@@ -37,8 +36,7 @@ export async function getDatabaseSchema(
     cache.set(database, entry);
   }
   if (entry.pending) return entry.pending;
-  if (!refresh && entry.value && Date.now() - entry.value.fetchedAt < TTL)
-    return entry.value;
+  if (!refresh && entry.value) return entry.value;
 
   const current = entry;
 

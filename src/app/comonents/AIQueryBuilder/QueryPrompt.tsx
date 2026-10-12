@@ -9,11 +9,8 @@ interface QueryPromptProps {
   input: string;
   onInputChange: (value: string) => void;
   onGenerate: () => Promise<void>;
-  onRetryConnection: () => void;
   disabled: boolean;
   isGenerating: boolean;
-  isConnecting: boolean;
-  connectionError: string;
   placeholder: string;
 }
 
@@ -21,11 +18,8 @@ export function QueryPrompt({
   input,
   onInputChange,
   onGenerate,
-  onRetryConnection,
   disabled,
   isGenerating,
-  isConnecting,
-  connectionError,
   placeholder,
 }: QueryPromptProps) {
   const id = useId();
@@ -77,24 +71,6 @@ export function QueryPrompt({
           }
         }}
       />
-      {isConnecting && (
-        <p className={styles.panelDescription} role="status">
-          Connecting to your database…
-        </p>
-      )}
-      {connectionError && (
-        <div className={styles.error} role="alert">
-          <p>{connectionError}</p>
-          <button
-            type="button"
-            className={styles.clearBtn}
-            onClick={onRetryConnection}
-            disabled={isConnecting}
-          >
-            Retry connection
-          </button>
-        </div>
-      )}
       <div className={styles.promptActions}>
         <span className={styles.shortcutHint}>Ctrl / ⌘ + Enter to send</span>
         <button

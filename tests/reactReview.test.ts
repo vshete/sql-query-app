@@ -1,9 +1,9 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
+import { test } from "node:test";
 import {
-  parseConnectionInfo,
-  parseQueryResult,
   parseAgentResult,
+  parseQueryResult,
+  parseSchemaInfo,
 } from "../src/app/services/clientValidation";
 import {
   compareQueryValues,
@@ -11,19 +11,19 @@ import {
   queryResultCsv,
 } from "../src/app/services/queryResults";
 import { streamQuery } from "../src/app/services/queryStream";
-import {
-  MAX_STREAM_TEXT_LENGTH,
-  MAX_REQUEST_LENGTH,
-  MAX_REQUEST_PAYLOAD_BYTES,
-} from "../src/app/types/queryProtocol";
 import { isSameHostOrigin } from "../src/app/services/requestOrigin";
 import type { QueryAgentResult } from "../src/app/types/query.types";
+import {
+  MAX_REQUEST_LENGTH,
+  MAX_REQUEST_PAYLOAD_BYTES,
+  MAX_STREAM_TEXT_LENGTH,
+} from "../src/app/types/queryProtocol";
 
 import {
   createTable,
   getCoreRowModel,
-  getSortedRowModel,
   getPaginationRowModel,
+  getSortedRowModel,
 } from "@tanstack/react-table";
 import { createResultColumns } from "../src/app/hooks/useQueryResultTable";
 
@@ -43,13 +43,12 @@ const result: QueryAgentResult = {
 
 test("external data validation rejects nulls, invalid columns and inconsistent row counts", () => {
   assert.equal(parseAgentResult(result).queryResult.rowCount, 1);
-  assert.throws(() => parseConnectionInfo(null), /Invalid/);
+  assert.throws(() => parseSchemaInfo(null), /Invalid/);
   assert.throws(
-    () =>
-      parseConnectionInfo({ connected: true, tables: [{ name: "broken" }] }),
+    () => parseSchemaInfo({ connected: true, tables: [{ name: "broken" }] }),
     /Invalid/,
   );
-  assert.throws(() => parseConnectionInfo({ connected: true }), /Invalid/);
+  assert.throws(() => parseSchemaInfo({ connected: true }), /Invalid/);
   assert.throws(
     () => parseQueryResult({ ...result.queryResult, rows: [{ wrong: 1 }] }),
     /Invalid/,

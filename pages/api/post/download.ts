@@ -1,15 +1,11 @@
-import { executeDatabaseQuery } from "@/app/services/database";
-import {
-  connectionIdFromCookie,
-  getDatabaseConnection,
-} from "@/app/services/databaseConnections";
+import { executeDatabaseQuery, getDatabase } from "@/app/services/database";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { queryResultCsv } from "@/app/services/queryResults";
 import { isSameHostOrigin } from "@/app/services/requestOrigin";
 
 /**
- * Accepts a POST with a SQL query and executes it using the cookie's database
- * connection. Returns the columns and rows as an escaped CSV attachment,
+ * Accepts a POST with a SQL query and executes it using the server-owned pool.
+ * Returns the columns and rows as an escaped CSV attachment,
  * or a JSON error if the query is missing or execution fails.
  */
 export default async function handler(
@@ -33,9 +29,7 @@ export default async function handler(
     return res.status(400).json({ error: "A SQL query is required." });
 
   try {
-    const { database } = getDatabaseConnection(
-      connectionIdFromCookie(req.headers.cookie),
-    );
+    const database = getDatabase();
     const result = await executeDatabaseQuery(
       req.body.query,
       undefined,

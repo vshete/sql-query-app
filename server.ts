@@ -3,10 +3,8 @@ import next from "next";
 import { createServer } from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
 import { getAgentConfig } from "./src/app/services/agentConfig";
-import {
-  connectionIdFromCookie,
-  getDatabaseConnection,
-} from "./src/app/services/databaseConnections";
+import { getDatabase } from "./src/app/services/database";
+import { initializeDatabase } from "./src/app/services/databaseInitialization";
 import { configureMockModelMode } from "./src/app/services/mocks/mockMode";
 import { runQueryAgent } from "./src/app/services/queryAgent";
 import { isSameHostOrigin } from "./src/app/services/requestOrigin";
@@ -22,6 +20,7 @@ async function main() {
   const port = Number(process.env.PORT || 3000);
   const app = next({ dev, port });
   await app.prepare();
+  await initializeDatabase();
   const server = createServer(app.getRequestHandler());
   const wss = new WebSocketServer({
     noServer: true,
@@ -47,7 +46,7 @@ async function main() {
     );
   });
 
-  wss.on("connection", (ws, req) => {
+  wss.on("connection", (ws) => {
     const controller = new AbortController();
     let started = false;
     const deadline = setTimeout(() => {
@@ -76,9 +75,7 @@ async function main() {
           throw new Error("A request of 1–10000 characters is required.");
         }
         const history = parseQueryHistory(payload.history);
-        const { database } = getDatabaseConnection(
-          connectionIdFromCookie(req.headers.cookie),
-        );
+        const database = getDatabase();
         const { provider, apiKey, model } = getAgentConfig();
         const result = await runQueryAgent(
           payload.request.trim(),

@@ -1,9 +1,9 @@
-import { test, mock } from "node:test";
 import assert from "node:assert/strict";
-import { Sequelize, QueryTypes } from "sequelize";
+import { mock, test } from "node:test";
+import { QueryTypes, Sequelize } from "sequelize";
+import { executeDatabaseQuery } from "../src/app/services/database";
 import { mockDatabaseClient, transactionQuery } from "./databaseMock";
 mock.method(Sequelize.prototype, "query", transactionQuery);
-import { executeDatabaseQuery } from "../src/app/services/database";
 
 process.env.DATABASE_URL = "postgresql://test:test@localhost/test";
 
@@ -147,3 +147,58 @@ test(
     }
   },
 );
+
+test("SQL and CSV endpoints execute against the server pool without a browser connection cookie", async () => {
+  const { default: queryHandler } = await import("../pages/api/post/query");
+  const { default: downloadHandler } =
+    await import("../pages/api/post/download");
+  const connect = mockDatabaseClient(async () => ({
+    query: async (query: string | { text: string }) => {
+      const sql = typeof query === "string" ? query : query.text;
+      return {
+        fields: [{ name: "customer_id" }],
+        rows: sql.startsWith("FETCH") ? [{ customer_id: 42 }] : [],
+      };
+    },
+    release: () => {},
+  }));
+  try {
+    for (const handler of [queryHandler, downloadHandler]) {
+      let status = 200;
+      let result: unknown;
+      const response = {
+        setHeader() {},
+        status(code: number) {
+          status = code;
+          return response;
+        },
+        json(value: unknown) {
+          result = value;
+          return response;
+        },
+        send(value: unknown) {
+          result = value;
+          return response;
+        },
+      };
+      await handler(
+        {
+          method: "POST",
+          body: { query: "SELECT customer_id FROM customers" },
+          headers: {},
+        } as import("next").NextApiRequest,
+        response as unknown as import("next").NextApiResponse,
+      );
+      assert.equal(status, 200);
+      if (handler === queryHandler) {
+        assert.deepEqual((result as { rows: unknown[] }).rows, [
+          { customer_id: 42 },
+        ]);
+      } else {
+        assert.equal(result, '"customer_id"\r\n"42"');
+      }
+    }
+  } finally {
+    connect.mock.restore();
+  }
+});
