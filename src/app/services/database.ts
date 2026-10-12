@@ -1,4 +1,5 @@
 import { QueryTypes, Sequelize } from "sequelize";
+import pg from "pg";
 import type { DatabaseQueryResult } from "../types/query.types";
 import { cleanAndValidateSql } from "./sqlValidation";
 
@@ -20,6 +21,9 @@ export function getDatabase(
   if (!database) {
     database = new Sequelize(connectionString, {
       dialect: "postgres",
+      // Keep the driver visible to deployment bundlers instead of relying on
+      // Sequelize's dynamic require(moduleName).
+      dialectModule: pg,
       logging: false,
       pool: { max: 10, min: 0, acquire: 5000, idle: 30000 },
       dialectOptions: {
