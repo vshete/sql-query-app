@@ -1,11 +1,11 @@
 "use client";
 
 import { memo } from "react";
-import type { DatabaseQueryResult } from "../types/query.types";
-import { ResultTable } from "./ResultTable";
 import { useFileDownload } from "../hooks/useFileDownload";
-import { WorkspaceIcon } from "./WorkspaceIcon";
+import type { DatabaseQueryResult } from "../types/query.types";
 import styles from "./AIQueryBuilder/queryAgent.module.css";
+import { ResultTable } from "./ResultTable";
+import { WorkspaceIcon } from "./WorkspaceIcon";
 
 interface QueryResultProps {
   result?: DatabaseQueryResult;

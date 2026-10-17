@@ -29,6 +29,7 @@ export function streamQuery(
     const socket = new WebSocket(
       `${protocol}//${window.location.host}/api/agent/stream`,
     );
+
     let settled = false;
     let sql = "";
     let answer = "";
@@ -57,10 +58,12 @@ export function streamQuery(
       finish({
         error: new DOMException("Query generation cancelled.", "AbortError"),
       });
+
     const timer = setTimeout(() => {
       flush();
       finish({ error: new Error("Query generation timed out.") });
     }, STREAM_TIMEOUT_MS);
+
     signal.addEventListener("abort", abort, { once: true });
 
     socket.onopen = () => {

@@ -9,19 +9,37 @@ import { parseQueryHistory } from "./queryConversation";
 export function handleQuerySocket(ws: WebSocket) {
   const controller = new AbortController();
   let started = false;
+  let completed = false;
   const deadline = setTimeout(() => {
     send({ type: "error", error: "Query generation timed out." });
-    controller.abort();
+    controller.abort(
+      new DOMException("Query generation timed out.", "TimeoutError"),
+    );
     ws.close();
   }, AGENT_TIMEOUT_MS);
   function send(event: unknown) {
     if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(event));
   }
-  ws.on("close", () => {
+  ws.on("close", (code: number, reason: Buffer) => {
     clearTimeout(deadline);
-    controller.abort();
+    if (completed || controller.signal.aborted) return;
+    if (started)
+      console.warn("Query socket closed before completion:", {
+        code,
+        reason: reason?.toString(),
+      });
+    controller.abort(
+      new DOMException(
+        "Query connection closed before completion.",
+        "AbortError",
+      ),
+    );
   });
-  ws.on("error", () => controller.abort());
+  ws.on("error", (error: Error) => {
+    clearTimeout(deadline);
+    console.error("Query socket error:", error);
+    controller.abort(error);
+  });
   ws.on("message", async (data) => {
     if (started) return;
     started = true;
@@ -54,11 +72,13 @@ export function handleQuerySocket(ws: WebSocket) {
       );
       send({ type: "result", result });
     } catch (error) {
+      if (controller.signal.aborted) return;
       send({
         type: "error",
         error: error instanceof Error ? error.message : "Query agent failed.",
       });
     } finally {
+      completed = true;
       clearTimeout(deadline);
       ws.close();
     }

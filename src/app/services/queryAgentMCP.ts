@@ -1,246 +1,131 @@
-import { AIMessage, HumanMessage } from "@langchain/core/messages";
-import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { Sequelize } from "sequelize";
 import { z } from "zod";
-import type {
-  DatabaseQueryResult,
-  QueryChatMessage,
-} from "../types/query.types";
-import { executeDatabaseQuery } from "./database";
-import { getDatabaseSchema } from "./databaseSchema";
-import { appendQueryHistory } from "./queryConversation";
-import { formatSqlRequest, type QueryPrompts } from "./queryPrompts";
-import { cleanAndValidateSql } from "./sqlValidation";
+import { executeQuery } from "./executeQuery";
+import { generateSql } from "./generateSql";
+import type { QueryRequestContext } from "./queryAgent.types";
+import type { QueryPrompts } from "./queryPrompts";
+import { getQueryRequest } from "./queryRequestStore";
+import { queryToolContracts } from "./queryToolContracts";
+import { summarizeResults } from "./summarizeResults";
 
-export interface QueryAgentOptions {
-  history?: QueryChatMessage[];
-  summarizeResults?: boolean;
-  onToken?: (token: string) => void;
-  onAgentToken?: (token: string) => void;
-  onSqlStart?: () => void;
-  signal?: AbortSignal;
-  database?: Sequelize;
+export interface QueryMcpConnection {
+  client: Client;
+  close: () => Promise<void>;
 }
 
-export interface QueryRequestContext {
-  model: BaseChatModel;
-  prompts: QueryPrompts;
-  options: QueryAgentOptions;
-  modelCalls: number;
-  generatedSQL: string;
-  requiredTables: string[];
-  allowedTables?: Set<string>;
-  queryResult?: DatabaseQueryResult;
-  toolError?: Error;
-  sqlGeneration?: Promise<void>;
-  queryExecution?: Promise<DatabaseQueryResult>;
-  resultSummary?: Promise<string>;
+// MCP cancellation (including timeout) and browser cancellation must both stop work.
+function toolSignal(context: QueryRequestContext, signal: AbortSignal) {
+  return context.options.signal
+    ? AbortSignal.any([context.options.signal, signal])
+    : signal;
 }
 
-export const requestContexts = new Map<string, QueryRequestContext>();
-
-function getRequestContext(requestId: string): QueryRequestContext {
-  const context = requestContexts.get(requestId);
-  if (!context) throw new Error("Query request is no longer active.");
-  return context;
-}
-
-export function extractText(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((part) =>
-        typeof part === "object" && part !== null && "text" in part
-          ? String(part.text)
-          : "",
-      )
-      .join("");
-  }
-  return "";
-}
-
-export async function initializeMcpServer(
+export async function createQueryMcpConnection(
   prompts: QueryPrompts,
-): Promise<Client> {
-  const mcpServer = new McpServer({ name: "query-app-demo", version: "1.0.0" });
-  const mcpClient = new Client({ name: "query-app-agent", version: "1.0.0" });
+): Promise<QueryMcpConnection> {
+  const server = new McpServer({ name: "query-app", version: "1.0.0" });
+  const client = new Client({ name: "query-app-agent", version: "1.0.0" });
   const [clientTransport, serverTransport] =
     InMemoryTransport.createLinkedPair();
+  const requestId = z.string().uuid();
 
-  mcpServer.registerTool(
-    "construct_sql",
+  const generate = queryToolContracts.construct_sql;
+  server.registerTool(
+    generate.name,
     {
+      title: generate.title,
       description: prompts.mcpConstructSql,
-      inputSchema: { request: z.string(), requestId: z.string() },
+      inputSchema: generate.input.extend({ requestId }),
+      outputSchema: generate.output,
     },
-    async ({ request: naturalLanguage, requestId }) => {
-      const context = getRequestContext(requestId);
-      // Cache the in-flight operation too: models can emit duplicate calls in one turn.
-      // Keep failures cached so a repeated tool call cannot restart generation.
-      context.sqlGeneration ??= (async () => {
-        const { model, options, prompts } = context;
-        const { text: schema, tables } = await getDatabaseSchema(
-          options.database,
-        );
-
-        context.allowedTables = new Set(
-          tables.flatMap((table) => [
-            `${table.schema}.${table.name}`,
-            ...(table.schema === "public" ? [table.name] : []),
-          ]),
-        );
-
-        options.onSqlStart?.();
-        let sqlText = "";
-        const stream = await model.stream(
-          [
-            {
-              role: "system",
-              content: prompts.sqlGeneration,
-            },
-            ...(options.history ?? []).map((message) =>
-              message.role === "user"
-                ? new HumanMessage(message.content)
-                : new AIMessage(message.content),
-            ),
-            {
-              role: "user",
-              content: formatSqlRequest(
-                prompts.sqlRequest,
-                schema,
-                naturalLanguage,
-              ),
-            },
-          ],
-          { signal: options.signal, tags: ["sql-generation"] },
-        );
-
-        for await (const chunk of stream) {
-          const token = extractText(chunk.content);
-          sqlText += token;
-          if (token) options.onToken?.(token);
-        }
-
-        const validated = cleanAndValidateSql(sqlText, context.allowedTables);
-        context.generatedSQL = validated.sql;
-        context.requiredTables = validated.tables;
-        console.debug("Generated SQL:", validated.sql);
-        console.debug("Generated required tables", validated.tables);
-      })().catch((error: unknown) => {
-        context.toolError =
-          error instanceof Error ? error : new Error(String(error));
-        throw context.toolError;
-      });
-      await context.sqlGeneration;
+    async ({ request, requestId }, extra) => {
+      const context = getQueryRequest(requestId);
+      const output = generate.output.parse(
+        await generateSql(context, request, toolSignal(context, extra.signal)),
+      );
       return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({
-              sql: context.generatedSQL,
-              tables: context.requiredTables,
-            }),
-          },
-        ],
+        structuredContent: output,
+        content: [{ type: "text", text: JSON.stringify(output) }],
       };
     },
   );
 
-  mcpServer.registerTool(
-    "execute_query",
+  const execute = queryToolContracts.execute_query;
+  server.registerTool(
+    execute.name,
     {
+      title: execute.title,
       description: prompts.mcpExecuteQuery,
-      inputSchema: { query: z.string(), requestId: z.string() },
+      inputSchema: execute.input.extend({ requestId }),
+      outputSchema: execute.output,
     },
-    async ({ query, requestId }) => {
-      const context = getRequestContext(requestId);
-      const validated = cleanAndValidateSql(query, context.allowedTables);
-      if (!context.generatedSQL || validated.sql !== context.generatedSQL) {
-        throw new Error("Execute exactly the SQL returned by construct_sql.");
-      }
-      console.debug("Executing SQL:", validated.sql);
-      context.queryExecution ??= executeDatabaseQuery(
-        validated.sql,
-        context.options.signal,
-        context.options.database,
-      ).catch((error: unknown) => {
-        context.toolError =
-          error instanceof Error ? error : new Error(String(error));
-        throw context.toolError;
-      });
-      context.queryResult = await context.queryExecution;
+    async ({ query, requestId }, extra) => {
+      const context = getQueryRequest(requestId);
+      const output = execute.output.parse(
+        await executeQuery(context, query, toolSignal(context, extra.signal)),
+      );
       return {
-        content: [{ type: "text", text: JSON.stringify(context.queryResult) }],
+        structuredContent: output,
+        content: [{ type: "text", text: JSON.stringify(output) }],
       };
     },
   );
 
-  mcpServer.registerTool(
-    "summarize_results",
+  const summarize = queryToolContracts.summarize_results;
+  server.registerTool(
+    summarize.name,
     {
+      title: summarize.title,
       description: prompts.mcpSummarizeResults,
-      inputSchema: { request: z.string(), requestId: z.string() },
+      inputSchema: summarize.input.extend({ requestId }),
+      outputSchema: summarize.output,
     },
-    async ({ request, requestId }) => {
-      const context = getRequestContext(requestId);
-      if (!context.generatedSQL || !context.queryResult) {
-        throw new Error("Execute the generated query before summarizing results.");
-      }
-      context.resultSummary ??= (async () => {
-        const { model, options, prompts, queryResult } = context;
-        const answerMessages = appendQueryHistory([], request, {
-          generatedSQL: context.generatedSQL,
-          explanation: "",
-          requiredTables: context.requiredTables,
-          warnings: [],
-          queryResult: queryResult!,
-        });
-        const stream = await model.stream(
-          [
-            { role: "system", content: prompts.resultSummary },
-            ...(options.history ?? []).map((message) =>
-              message.role === "user"
-                ? new HumanMessage(message.content)
-                : new AIMessage(message.content),
-            ),
-            new HumanMessage(
-              JSON.stringify({
-                request,
-                executedResult: JSON.parse(answerMessages.at(-1)!.content),
-              }),
-            ),
-          ],
-          { signal: options.signal, tags: ["result-summary"] },
-        );
-        let explanation = "";
-        options.onAgentToken?.("\n\n");
-        for await (const chunk of stream) {
-          const token = extractText(chunk.content);
-          explanation += token;
-          if (token) options.onAgentToken?.(token);
-        }
-        return explanation.trim();
-      })();
+    async ({ request, requestId }, extra) => {
+      const context = getQueryRequest(requestId);
+      const output = summarize.output.parse(
+        await summarizeResults(
+          context,
+          request,
+          toolSignal(context, extra.signal),
+        ),
+      );
       return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({ explanation: await context.resultSummary }),
-          },
-        ],
+        structuredContent: output,
+        content: [{ type: "text", text: JSON.stringify(output) }],
       };
     },
   );
 
+  const close = async () => {
+    await Promise.allSettled([client.close(), server.close()]);
+  };
   try {
-    await mcpServer.connect(serverTransport);
-    await mcpClient.connect(clientTransport);
-    return mcpClient;
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+    return { client, close };
   } catch (error) {
-    await Promise.allSettled([mcpClient.close(), mcpServer.close()]);
+    await close();
     throw error;
   }
+}
+
+let connection: Promise<QueryMcpConnection> | undefined;
+
+export async function getQueryMcpClient(
+  prompts: QueryPrompts,
+): Promise<Client> {
+  connection ??= createQueryMcpConnection(prompts).catch((error) => {
+    connection = undefined;
+    throw error;
+  });
+  return (await connection).client;
+}
+
+/** Call during application shutdown or test teardown, after active queries settle. */
+export async function closeQueryMcpConnection() {
+  const current = connection;
+  connection = undefined;
+  if (current) await (await current).close();
 }

@@ -1,5 +1,5 @@
-import { QueryTypes, Sequelize } from "sequelize";
 import pg from "pg";
+import { QueryTypes, Sequelize } from "sequelize";
 import type { DatabaseQueryResult } from "../types/query.types";
 import { cleanAndValidateSql } from "./sqlValidation";
 

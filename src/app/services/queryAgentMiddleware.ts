@@ -1,5 +1,6 @@
 import { createMiddleware } from "langchain";
-import type { QueryRequestContext } from "./queryAgentMCP";
+import type { QueryRequestContext } from "./queryAgent.types";
+import { queryToolContracts } from "./queryToolContracts";
 
 export function createQueryAgentMiddleware(context: QueryRequestContext) {
   return createMiddleware({
@@ -19,7 +20,9 @@ export function createQueryAgentMiddleware(context: QueryRequestContext) {
         tools: request.tools.filter(
           (entry) =>
             entry.name ===
-            (context.generatedSQL ? "execute_query" : "construct_sql"),
+            (context.generatedSQL
+              ? queryToolContracts.execute_query.name
+              : queryToolContracts.construct_sql.name),
         ),
       }),
   });

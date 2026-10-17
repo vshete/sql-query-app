@@ -38,6 +38,24 @@ mockDatabaseClient(async () => ({
 }));
 import { runQueryAgent } from "../src/app/services/queryAgent";
 
+test("request cancellation preserves its reason without logging a SQL failure", async () => {
+  const controller = new AbortController();
+  const reason = new DOMException("Query connection closed before completion.", "AbortError");
+  controller.abort(reason);
+  const errors = mock.method(console, "error", () => {});
+  try {
+    await assert.rejects(
+      runQueryAgent("List customers", "openai", "test-key", "test", {
+        signal: controller.signal,
+      }),
+      (error: unknown) => error === reason,
+    );
+    assert.equal(errors.mock.callCount(), 0);
+  } finally {
+    errors.mock.restore();
+  }
+});
+
 test("SQL and agent chunks arrive before their responses finish, through MCP", async () => {
   const originalFetch = globalThis.fetch;
   let calls = 0;
