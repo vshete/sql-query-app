@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
+/** Validate the browser upgrade request before handing its socket to the shared agent handler. */
 export async function GET(request: Request) {
   const origin = request.headers.get("origin");
   if (

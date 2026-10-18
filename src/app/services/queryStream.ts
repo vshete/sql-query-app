@@ -35,12 +35,14 @@ export function streamQuery(
     let answer = "";
     let frame: number | undefined;
 
+    /** Publish accumulated text at most once per scheduled browser paint. */
     function flush() {
       if (frame !== undefined) cancelAnimationFrame(frame);
       frame = undefined;
       if (!signal.aborted) onUpdate(sql, answer);
     }
 
+    /** Settle exactly once and release every resource owned by this stream. */
     function finish(outcome: { result: QueryAgentResult } | { error: Error }) {
       if (settled) return;
       settled = true;

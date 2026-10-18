@@ -10,6 +10,7 @@ export function formatQueryValue(value: QueryValue): string {
   return value === null ? "NULL" : String(value);
 }
 
+/** Sort nulls first and preserve numeric/boolean ordering; compare other scalar values as text. */
 export function compareQueryValues(
   left: QueryValue,
   right: QueryValue,
@@ -24,6 +25,7 @@ export function compareQueryValues(
   return String(left).localeCompare(String(right));
 }
 
+/** Quote and escape one CSV field, neutralizing formula-like strings for spreadsheet consumers. */
 function csvCell(value: QueryValue): string {
   // Quoting alone does not prevent spreadsheet formula execution. Keep actual
   // negative numbers numeric; neutralize only strings interpreted as formulas.

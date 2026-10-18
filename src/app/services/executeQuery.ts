@@ -2,6 +2,7 @@ import { executeDatabaseQuery } from "./database";
 import type { QueryRequestContext } from "./queryAgent.types";
 import { cleanAndValidateSql } from "./sqlValidation";
 
+/** Execute only the SQL produced by this request; share its execution promise across duplicate calls. */
 export async function executeQuery(
   context: QueryRequestContext,
   query: string,

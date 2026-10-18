@@ -1,5 +1,6 @@
 "use client";
 
+/** Offer route-render recovery; asynchronous query errors are handled by their owning hooks. */
 export default function WorkspaceError({
   reset,
 }: {

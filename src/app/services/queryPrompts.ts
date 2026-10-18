@@ -15,6 +15,7 @@ const promptFiles = {
 
 export type QueryPrompts = Record<keyof typeof promptFiles, string>;
 
+/** Read and validate all prompt files for this run; prompt contents are not cached here. */
 export async function loadQueryPrompts(): Promise<QueryPrompts> {
   const entries = await Promise.all(
     Object.entries(promptFiles).map(async ([key, filename]) => {
@@ -29,6 +30,7 @@ export async function loadQueryPrompts(): Promise<QueryPrompts> {
   return Object.fromEntries(entries) as QueryPrompts;
 }
 
+/** Insert schema and user text without recursively interpreting placeholders inside either value. */
 export function formatSqlRequest(template: string, schema: string, request: string): string {
   // Replace in one pass so placeholders inside schema or user input stay literal.
   return template.replace(/\{\{(schema|request)\}\}/g, (_, key: string) =>

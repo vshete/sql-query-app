@@ -4,6 +4,7 @@ import type { QueryRow } from "../types/query.types";
 import { TableCell } from "./TableCell";
 import styles from "./AIQueryBuilder/queryAgent.module.css";
 
+/** Render visible cells while allowing unchanged TanStack rows to skip React renders. */
 export const TableRow = memo(function TableRow({
   row,
 }: {

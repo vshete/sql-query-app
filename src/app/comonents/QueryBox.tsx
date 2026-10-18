@@ -10,6 +10,7 @@ type QueryBoxProps = {
   initialQuery?: string;
 };
 
+/** Own the manual SQL draft and share execution between the button and keyboard shortcut. */
 export const QueryBox = ({
   onQueryExecute,
   isDisabled,

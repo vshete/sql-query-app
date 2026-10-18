@@ -4,6 +4,7 @@ import type { QueryRow, QueryValue } from "../types/query.types";
 import { formatQueryValue } from "../services/queryResults";
 import styles from "./AIQueryBuilder/queryAgent.module.css";
 
+/** Render one typed value; inherit column widths through CSS variables during resizing. */
 export const TableCell = memo(function TableCell({
   cell,
 }: {

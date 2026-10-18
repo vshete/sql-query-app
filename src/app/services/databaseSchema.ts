@@ -29,6 +29,7 @@ const cache = (state.queryAppSchemaCache ??= new WeakMap<
 
 const quote = (name: string) => `"${name.replaceAll('"', '""')}"`;
 
+/** Coalesce catalog reads per pool; retain the last successful value until explicit refresh. */
 export async function getDatabaseSchema(
   database = getDatabase(),
   refresh = false,
@@ -40,6 +41,7 @@ export async function getDatabaseSchema(
     cache.set(database, entry);
   }
 
+  // Pending work wins even for refresh callers; failures retain the previous value.
   if (entry.pending) return entry.pending;
   if (!refresh && entry.value) return entry.value;
 
@@ -103,6 +105,7 @@ export async function getDatabaseSchema(
           .join("\n\n"),
     };
 
+    // Publish only a complete successful snapshot; consumers never see partial metadata.
     current.value = value;
     return value;
   })();

@@ -4,6 +4,7 @@ import { extractText, toHistoryMessages } from "./queryMessages";
 import { formatSqlRequest } from "./queryPrompts";
 import { cleanAndValidateSql } from "./sqlValidation";
 
+/** Generate SQL once per request, stream provisional text, then validate it against cached schema. */
 export async function generateSql(
   context: QueryRequestContext,
   naturalLanguage: string,

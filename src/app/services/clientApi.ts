@@ -15,6 +15,7 @@ export async function readJsonResponse(response: Response): Promise<unknown> {
   return value;
 }
 
+/** Fetch uncached JSON and convert non-success responses into a user-readable error. */
 export async function fetchJson(
   url: string,
   options?: RequestInit,

@@ -16,6 +16,7 @@ import { registerQueryRequest } from "./queryRequestStore";
 
 export type QueryAgentProvider = "gemini" | "openai";
 
+/** Run one agent turn, release its request context, and optionally summarize executed rows. */
 export async function runQueryAgent(
   request: string,
   provider: QueryAgentProvider,
@@ -43,6 +44,7 @@ export async function runQueryAgent(
     requiredTables: [],
   };
 
+  // Only the opaque ID crosses MCP; model, credentials, and callbacks stay in this process.
   const { requestId, dispose } = registerQueryRequest(context);
 
   try {
@@ -85,13 +87,12 @@ export async function runQueryAgent(
 
     const { generatedSQL, requiredTables, queryResult } = context;
     if (generatedSQL && !queryResult) {
-      throw new Error(
-        "The query agent generated SQL but did not execute it.",
-      );
+      throw new Error("The query agent generated SQL but did not execute it.");
     }
 
     if (!queryResult) {
-      if (!agentText.trim()) throw new Error("The query agent returned no answer.");
+      if (!agentText.trim())
+        throw new Error("The query agent returned no answer.");
       return {
         generatedSQL: "",
         explanation: agentText.trim(),
@@ -132,6 +133,7 @@ export async function runQueryAgent(
     }
     return result;
   } finally {
+    // Always release the registry entry, including cancellation and tool failures.
     dispose();
   }
 }

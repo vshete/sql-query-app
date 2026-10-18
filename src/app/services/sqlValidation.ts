@@ -1,7 +1,8 @@
-import { PostgreSQL } from "dt-sql-parser/dist/parser/postgresql";
 import { SelectNoParensContext } from "dt-sql-parser/dist/lib/postgresql/PostgreSqlParser";
 import { PostgreSqlParserListener } from "dt-sql-parser/dist/lib/postgresql/PostgreSqlParserListener";
+import { PostgreSQL } from "dt-sql-parser/dist/parser/postgresql";
 
+/** Normalize unquoted PostgreSQL identifiers while preserving the case of quoted identifiers. */
 function identifier(text: string): string {
   return text.startsWith('"')
     ? text.slice(1, -1).replace(/""/g, '"')

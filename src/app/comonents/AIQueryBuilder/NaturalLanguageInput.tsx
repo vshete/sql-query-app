@@ -22,6 +22,7 @@ interface NaturalLanguageInputProps {
   placeholder?: string;
 }
 
+/** Coordinate the prompt and conversation views; the generation hook owns transport and results. */
 export default function NaturalLanguageInput({
   onGeneratingChange,
   isLoading = false,
@@ -129,6 +130,7 @@ export default function NaturalLanguageInput({
   );
 }
 
+/** Render one question, provisional SQL, final explanation, warnings, and optional result snapshot. */
 const ConversationTurn = memo(function ConversationTurn({
   turn,
   isGenerating,

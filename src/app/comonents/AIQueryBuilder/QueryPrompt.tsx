@@ -14,6 +14,7 @@ interface QueryPromptProps {
   placeholder: string;
 }
 
+/** Render the controlled request draft with length limits and an IME-safe submit shortcut. */
 export function QueryPrompt({
   input,
   onInputChange,

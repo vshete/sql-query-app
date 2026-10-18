@@ -17,6 +17,7 @@ const CodeEditor = dynamic(
   },
 );
 
+/** Format completed SQL for display only; preserve partial or unsupported SQL verbatim. */
 export const QueryPreview = memo(function QueryPreview({
   sql,
   isGenerating,

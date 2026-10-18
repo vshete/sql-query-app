@@ -37,6 +37,7 @@ export function appendQueryHistory(
   return next;
 }
 
+/** Validate alternating user/assistant pairs and reject conversation context beyond protocol limits. */
 export function parseQueryHistory(value: unknown): QueryChatMessage[] {
   if (value === undefined) return [];
   if (

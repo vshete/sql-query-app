@@ -22,6 +22,7 @@ import {
   MAX_COLUMN_WIDTH,
 } from "../services/queryResults";
 
+/** Build exact-name SQL accessors with stable column IDs and scalar-aware sorting. */
 export function createResultColumns(names: string[]): ColumnDef<QueryRow>[] {
   return names.map((column, index) => ({
     // An accessor function treats dots/brackets in SQL aliases literally.
@@ -37,6 +38,7 @@ export function createResultColumns(names: string[]): ColumnDef<QueryRow>[] {
   }));
 }
 
+/** Own sorting, sizing, and pagination of loaded rows; reset display state for a new result. */
 export function useQueryResultTable(result: DatabaseQueryResult) {
   const columns = useMemo(
     () => createResultColumns(result.columns),
@@ -72,6 +74,7 @@ export function useQueryResultTable(result: DatabaseQueryResult) {
     setSorting([]);
     table.resetColumnSizing();
   }, [result, table]);
+  // Width variables update at the table root so memoized cells need no sizing-map prop.
   const columnSizeVars: Record<string, number> = {};
   for (const header of table.getFlatHeaders()) {
     columnSizeVars[`--header-${header.id}-size`] = header.getSize();

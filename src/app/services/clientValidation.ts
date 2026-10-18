@@ -5,16 +5,19 @@ import type {
   QueryValue,
 } from "../types/query.types";
 
+/** Narrow external JSON to a non-null object before reading its fields. */
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** Check every array member before trusting string-list fields from the server. */
 function isStringArray(value: unknown): value is string[] {
   return (
     Array.isArray(value) && value.every((item) => typeof item === "string")
   );
 }
 
+/** Accept only the finite scalar values supported by the result table and CSV contract. */
 function isQueryValue(value: unknown): value is QueryValue {
   return (
     value === null ||
@@ -24,6 +27,7 @@ function isQueryValue(value: unknown): value is QueryValue {
   );
 }
 
+/** Validate table metadata and every column before exposing it to the schema explorer. */
 function isSchemaTable(value: unknown): value is SchemaTable {
   return (
     isRecord(value) &&
@@ -42,6 +46,7 @@ function isSchemaTable(value: unknown): value is SchemaTable {
   );
 }
 
+/** Validate the schema endpoint payload and return only the metadata used by the browser. */
 export function parseSchemaInfo(value: unknown): { tables: SchemaTable[] } {
   if (
     !isRecord(value) ||
@@ -53,6 +58,7 @@ export function parseSchemaInfo(value: unknown): { tables: SchemaTable[] } {
   return { tables: value.tables as SchemaTable[] };
 }
 
+/** Validate columns, scalar rows, and the loaded-row count before rendering a database result. */
 export function parseQueryResult(value: unknown): DatabaseQueryResult {
   const columns =
     isRecord(value) && isStringArray(value.columns) ? value.columns : undefined;
@@ -77,6 +83,7 @@ export function parseQueryResult(value: unknown): DatabaseQueryResult {
   return value as unknown as DatabaseQueryResult;
 }
 
+/** Validate an answer-only or executed-query response, including any nested result table. */
 export function parseAgentResult(value: unknown): QueryAgentResult {
   if (
     !isRecord(value) ||
@@ -101,6 +108,7 @@ export function parseAgentResult(value: unknown): QueryAgentResult {
   };
 }
 
+/** Use a non-empty API error when available; otherwise preserve the caller’s fallback message. */
 export function responseError(value: unknown, fallback: string): string {
   return isRecord(value) &&
     typeof value.error === "string" &&

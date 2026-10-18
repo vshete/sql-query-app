@@ -10,6 +10,7 @@ type ToolOutput<Name extends QueryToolName> = z.output<
   (typeof queryToolContracts)[Name]["output"]
 >;
 
+/** Call MCP with application-owned request identity and validate the returned tool-specific payload. */
 export async function callQueryTool<Name extends QueryToolName>(
   client: Client,
   name: Name,
@@ -39,6 +40,7 @@ export async function callQueryTool<Name extends QueryToolName>(
   ) as ToolOutput<Name>;
 }
 
+/** Expose generation and execution to LangChain while retaining results in the request context. */
 export function createQueryAgentTools(
   client: Client,
   requestId: string,

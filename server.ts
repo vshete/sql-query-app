@@ -4,6 +4,7 @@ import { initializeDatabase } from "./src/app/services/databaseInitialization";
 import { configureMockModelMode } from "./src/app/services/mocks/mockMode";
 import { createQueryHttpServer } from "./src/app/services/queryHttpServer";
 
+/** Prepare Next.js and warm the database before opening the custom HTTP/WebSocket server. */
 async function main() {
   const dev = process.env.NODE_ENV !== "production";
   configureMockModelMode(dev);

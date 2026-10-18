@@ -9,6 +9,7 @@ import styles from "./queryAgent.module.css";
 const plugins = [remarkGfm];
 const components: Components = { img: ({ alt }) => <span>{alt ?? ""}</span> };
 
+/** Render answer Markdown with stable plugins and replace remote images with their alt text. */
 const Markdown = memo(function Markdown({ text }: { text: string }) {
   return (
     <ReactMarkdown remarkPlugins={plugins} components={components}>
@@ -17,6 +18,7 @@ const Markdown = memo(function Markdown({ text }: { text: string }) {
   );
 });
 
+/** Defer Markdown updates so streaming answer rendering does not block urgent input updates. */
 export default memo(function AgentResponse({ text }: { text: string }) {
   const deferredText = useDeferredValue(text);
   return (

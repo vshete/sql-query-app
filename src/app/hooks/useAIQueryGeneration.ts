@@ -29,8 +29,10 @@ const idle: GenerationState = {
   error: null,
 };
 
+/** Own conversation snapshots and one cancellable stream; ignore callbacks from superseded requests. */
 export function useAIQueryGeneration() {
   const [state, setState] = useState(idle);
+  // Model context is bounded separately from the full visible conversation snapshots.
   const history = useRef<QueryChatMessage[]>([]);
   const active = useRef<AbortController | null>(null);
 
@@ -77,6 +79,7 @@ export function useAIQueryGeneration() {
             setState((previous) => ({ ...previous, streamedSQL, agentText }));
         },
       });
+      // Identity guards stop an older request from updating a reset or replacement conversation.
       if (active.current === controller) {
         history.current = appendQueryHistory(history.current, request, result);
         setState((previous) => ({ ...previous, result }));

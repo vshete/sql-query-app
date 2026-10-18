@@ -7,6 +7,7 @@ import {
 } from "@codemirror/view";
 import { codeEditorTheme } from "./codeEditorTheme";
 
+/** Configure a selectable, read-only SQL document without editing history or edit keymaps. */
 export function createEditorState({
   languageSupport,
 }: {

@@ -12,6 +12,7 @@ import { useQueryResultTable } from "../hooks/useQueryResultTable";
 import { TableRow } from "./TableRow";
 import styles from "./AIQueryBuilder/queryAgent.module.css";
 
+/** Render accessible sorting and pointer/keyboard resizing for one result column. */
 function ResultHeader({
   header,
   table,
@@ -94,6 +95,7 @@ function ResultHeader({
   );
 }
 
+/** Render the current page of loaded rows and controls supplied by the table-state hook. */
 export function ResultTable({
   result,
   isDataLoading,

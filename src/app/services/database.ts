@@ -1,6 +1,6 @@
 import pg from "pg";
 import { QueryTypes, Sequelize } from "sequelize";
-import type { DatabaseQueryResult } from "../types/query.types";
+import type { DatabaseQueryResult, QueryValue } from "../types/query.types";
 import { cleanAndValidateSql } from "./sqlValidation";
 
 const state = globalThis as typeof globalThis & {
@@ -9,6 +9,7 @@ const state = globalThis as typeof globalThis & {
 const databases = (state.queryAppDatabases ??= new Map<string, Sequelize>());
 const MAX_ROWS = 1000;
 
+/** Reuse a server-owned PostgreSQL pool by connection URL, including across development reloads. */
 export function getDatabase(
   connectionString = process.env.DATABASE_URL,
 ): Sequelize {
@@ -36,6 +37,21 @@ export function getDatabase(
   return database;
 }
 
+/** Preserve PostgreSQL scalars; encode dates and compound values for the JSON result contract. */
+function serializeQueryValue(value: unknown): QueryValue {
+  if (value instanceof Date) return value.toISOString();
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+  return JSON.stringify(value) ?? null;
+}
+
+/** Validate SQL, fetch a bounded cursor in a read-only transaction, and serialize the loaded rows. */
 export async function executeDatabaseQuery(
   sql: string,
   signal?: AbortSignal,
@@ -73,14 +89,7 @@ export async function executeDatabaseQuery(
         Object.fromEntries(
           Object.entries(row).map(([key, value]) => [
             key,
-            value instanceof Date
-              ? value.toISOString()
-              : value === null ||
-                  typeof value === "string" ||
-                  typeof value === "number" ||
-                  typeof value === "boolean"
-                ? value
-                : (JSON.stringify(value) ?? null),
+            serializeQueryValue(value),
           ]),
         ),
       );

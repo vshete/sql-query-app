@@ -6,6 +6,7 @@ import NaturalLanguageInput from "./NaturalLanguageInput";
 import SchemaExplorer from "./SchemaExplorer";
 import styles from "./queryAgent.module.css";
 
+/** Connect schema refresh and generation state without coupling their data-fetching lifecycles. */
 export default function QueryWorkspace() {
   const { tables, isLoading, error, refreshSchema } = useDatabaseSchema();
   const [isGenerating, setIsGenerating] = useState(false);

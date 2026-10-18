@@ -1,242 +1,187 @@
-# SQL Query App
+# Query Studio
 
-The app offers natural-language queries with a schema explorer. Requests stream SQL and
-agent responses into the browser, with a resizable, sortable results table, pagination, and CSV download.
-Manual SQL components and API routes are retained for future use but are not shown in the workspace.
+An AI-assisted PostgreSQL workspace built with Next.js, React, TypeScript, LangChain, and in-process MCP tools. Ask a question in plain language, inspect the generated SQL, and explore real results through sortable, resizable tables and CSV downloads. Follow-up questions use bounded conversation context.
 
-The natural-language agent validates SQL and executes it against PostgreSQL.
-Both natural-language and manual SQL queries use the default PostgreSQL connection configured by server-side `DATABASE_URL`.
+The active workspace provides a schema explorer and chat. Manual SQL components are retained but are not mounted; their HTTP endpoints remain available.
 
-## Development
+## Quick start
+
+Prerequisites: a Node.js version supported by the installed Next.js release, npm, PostgreSQL, and a Gemini or OpenAI API key. Docker Compose is optional for local datasets. Use the lockfile for reproducible dependency installation.
 
 ```bash
-npm install
+npm ci
 cp env.example .env
+```
+
+Edit `.env` with your database URL and provider credentials, then run:
+
+```bash
 npm run dev
 ```
 
-Set your provider, API key, and PostgreSQL connection URL as `DATABASE_URL` in `.env`, then open http://localhost:3000. The server authenticates its shared database pool and loads the schema before accepting requests. Failed startup connections are retried up to three times after the initial attempt, with a one-second pause between attempts. The page renders immediately while reading cached schema metadata in the background. Restart the server after changing `.env`. The URL stays on the server; users cannot select or enter a different URL in the UI.
-For production, run `npm run build` followed by `npm start`.
+Open [localhost:3000](http://localhost:3000). Startup prepares Next.js, authenticates the shared database pool, and loads schema metadata before listening. Connection authentication retries three times after the first attempt, one second apart. A database or schema failure prevents startup. Restart after changing environment variables.
 
-To mock model calls during development:
+## Configuration
 
-```bash
-npm run dev:mockModel
-# Alternatively: npm run dev -- --mockModel
-# npm versions that forward custom config flags also support: npm run dev --mockModel
-```
+All settings below are server-side. Never prefix database credentials or provider keys with `NEXT_PUBLIC_`.
 
-Mock mode needs `DATABASE_URL`, but no AI API key. Every natural-language request
-returns `SELECT customer_id, company_name, country FROM customers ORDER BY customer_id LIMIT 25;`.
-The fake model emits tool calls through the same LangChain agent and middleware as
-production, and streams fixed SQL inside `construct_sql` without provider calls. SQL validation and PostgreSQL
-execution remain active. Mock factories and models live in `src/app/services/mocks`.
-Production ignores the mock flag. Run `npm run test:mockModel` to check this path.
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Required PostgreSQL connection used by queries, schema discovery, and exports |
+| `AI_PROVIDER` | `gemini` (default) or `openai` |
+| `AI_API_KEY` | Primary Gemini key; fallback key for OpenAI |
+| `GEMINI_API_KEY`, `GOOGLE_API_KEY` | Gemini fallback keys, in that order after `AI_API_KEY` |
+| `OPENAI_API_KEY` | Primary OpenAI key |
+| `AI_MODEL` | Explicit model override |
+| `LANGCHAIN_MODEL` | Fallback model override if `AI_MODEL` is absent |
+| `PORT` | Custom-server port; defaults to `3000` |
+| `DATABASE_SEED_URL` | Optional separate privileged connection for ecommerce seeding |
+| `DATABASE_TEST_URL` | Optional disposable database for live integration tests |
 
-## Code map
+Code defaults are `gemini-3.5-flash` and `gpt-4o-mini`; these are application configuration values, not a guarantee of provider availability. `env.example` explicitly sets the Gemini model, so change `AI_MODEL` as well when switching providers. Preserve your provider's required PostgreSQL SSL parameters; the example uses `sslmode=verify-full`.
 
-- `src/app/comonents/AppEntry.tsx`: natural-language input, schema explorer, and results.
-- `src/app/hooks/useAIQueryGeneration.ts`: WebSocket client for agent streaming.
-- `src/app/services/queryAgent.ts`: LangChain agent, MCP tools, and PostgreSQL execution.
-- `src/app/services/sqlValidation.ts`: PostgreSQL parsing and read-only query policy.
-- `src/app/types/query.types.ts`: shared agent response and database result types.
-- `server.ts`: Next.js server and `/api/agent/stream` WebSocket endpoint.
-- `pages/api/post/agent.ts`: non-streaming agent POST endpoint.
-- `pages/api/post/query.ts`: real manual-query results from the configured connection.
-- `pages/api/post/download.ts`: CSV export of the configured connection’s query results (up to 1,000 rows).
-- `src/app/services/manualQuery.ts`: legacy demo fixture, no longer used by the API or UI.
-
-## Checks
-
-### VS Code tests and debugging
-
-Use **Terminal → Run Task** to select **Test: All tests** or **Test: Current file**.
-For the current-file task or debug configuration, open a `tests/*.test.ts` file first.
-
-In **Run and Debug**, select **Debug: Current test file**, **Debug: All tests**,
-**Debug: Node server**, or **Debug: Node server (mock model)**, then press **F5**.
-Set breakpoints in the TypeScript tests, `server.ts`, API routes, or server services.
-Use **Ctrl+F5** with the same configuration to run without debugging.
-The server configurations use the usual `.env` setup and development port (3000 by default);
-stop any existing server on that port before launching. **Attach: Node process** can
-connect to an already running Node process.
-
-All-test configurations list the test files explicitly; update both `.vscode/launch.json`
-and `.vscode/tasks.json` when adding a new test file. Database integration tests still
-require `DATABASE_TEST_URL` in the environment; otherwise they are skipped.
-
-```bash
-npm run lint
-npx tsc --noEmit
-npm run test:sql
-npm run test:db
-npm run test:stream
-npm run test:manual
-npm run build
-```
-
-## LangChain and MCP Query Agent
-
-The natural-language SQL builder uses a server-side LangChain agent. It discovers the connected PostgreSQL database schema from the system catalogs,
-caches it in server memory, and constructs a read-only query with
-`construct_sql`, then calls `execute_query`. Both the POST API and WebSocket path use this tool.
-The response contains `queryResult` with actual columns, rows, returned row count, and a
-`truncated` flag. Numeric/count values retain PostgreSQL's string representation to avoid
-precision loss; dates are serialized as ISO strings.
-
-### PostgreSQL setup and seed
-
-Start the included local PostgreSQL database (requires Docker Compose):
+## Local PostgreSQL datasets
 
 ```bash
 docker compose up -d --wait
-cp env.example .env  # for a new setup; preserve an existing .env
-npm run dev
 ```
 
-For local development instead of Neon, set `DATABASE_URL` in `.env` to one of these Docker PostgreSQL URLs and restart the server:
+Use one of these URLs for `DATABASE_URL` and restart the app:
 
-| Dataset   | Connection URL                                                       |
-| --------- | -------------------------------------------------------------------- |
-| Ecommerce | `postgresql://query_app:query_app_local@localhost:5432/query_app`    |
-| Banking   | `postgresql://banking_app:banking_local@localhost:5433/banking_demo` |
+| Dataset | App on host | App on the Compose network |
+| --- | --- | --- |
+| Ecommerce | `postgresql://query_app:query_app_local@localhost:5432/query_app` | `postgresql://query_app:query_app_local@postgres:5432/query_app` |
+| Banking | `postgresql://banking_app:banking_local@localhost:5434/banking_demo` | `postgresql://banking_app:banking_local@banking-postgres:5432/banking_demo` |
 
-For an app running inside the same Docker Compose network:
+Ports above match [compose.yaml](compose.yaml). These credentials are for local development.
 
-| Dataset   | Connection URL                                                              |
-| --------- | --------------------------------------------------------------------------- |
-| Ecommerce | `postgresql://query_app:query_app_local@postgres:5432/query_app`            |
-| Banking   | `postgresql://banking_app:banking_local@banking-postgres:5432/banking_demo` |
+Seed ecommerce separately:
 
-Use the ecommerce URL for `DATABASE_URL` in `.env` when that is your default database.
-You can instead use an existing PostgreSQL database. SSL settings
-can be supplied in the connection URL, as required by your database provider.
+```bash
+npm run db:seed
+```
 
-A separate banking database supports testing a different dataset alongside the existing
-ecommerce database:
+The seed loads `.env`, runs in a transaction, and inserts 4,288 deterministic records across categories, employees, customers, products, orders, and order details. `ON CONFLICT DO NOTHING` preserves existing rows on reruns; incompatible tables cause rollback. Use a dedicated demo database. The SQL is also available in [scripts/seed.sql](scripts/seed.sql).
+
+The banking container runs [scripts/populate-test-db.sql](scripts/populate-test-db.sql) on first initialization of an empty volume. It contains synthetic branches, customers, loans, installments, credit cards, merchants, sales, statements, and a defaulters view in `banking_demo`, with INR amounts and an October 1, 2026 snapshot. To start only banking or explicitly replace its data:
 
 ```bash
 npm run db:banking:up
+npm run db:seed:banking
 ```
 
-Set `DATABASE_URL` in `.env` to the following URL, restart the server, and reload the page:
+Reseeding drops and recreates the entire `banking_demo` schema in one transaction. `db:seed:docker` aliases the same command. Volumes retain data across restarts.
 
-```text
-postgresql://banking_app:banking_local@localhost:5433/banking_demo
-```
+Example questions: “Total loans by branch and loan type”, “Card sales by merchant category excluding refunds”, or “List defaulters by overdue amount”.
 
-Switch back to ecommerce by setting `DATABASE_URL` to
-`postgresql://query_app:query_app_local@localhost:5432/query_app`.
-For an app running inside the same Compose network, use host `banking-postgres` and port
-`5432` instead of `localhost:5433`.
-
-The banking container initializes `scripts/populate-test-db.sql` only on its first startup
-with an empty volume. Its independent volume preserves data across restarts. The script
-creates the `banking_demo` schema with 5 branches, 200 fictional customers, 240 loans,
-1,440 loan installments, 220 credit cards, 25 merchants, 4,400 card sales, 440 statements,
-and a derived `defaulters` view. Amounts are INR; the fixed snapshot is October 1, 2026.
-Sales include settled, refunded, and declined transactions; statements include fully paid,
-partially paid, and unpaid balances. Defaulters have missed loan installments or card
-minimum payments. Only synthetic names, example emails, and card last-four digits are used.
-
-To replace banking data in the running container:
+## Development without provider calls
 
 ```bash
-npm run db:seed:banking
-# db:seed:docker is an alias for the same command.
+npm run dev:mockModel
+# Equivalent: npm run dev -- --mockModel
 ```
 
-Reseeding drops and recreates the entire `banking_demo` schema in one transaction.
-For a custom Compose project, prefix commands with `COMPOSE_PROJECT_NAME=your-project`.
-
-Try prompts such as "Total loans issued by branch and loan type", "Credit card sales
-by merchant category, excluding declined and refunded transactions", or "List defaulters
-with overdue amounts and days past due". Example SQL:
+Mock mode exercises the real agent, MCP transport, SQL validation, and PostgreSQL execution. It still requires `DATABASE_URL` and the ecommerce `customers` table, but no AI key. It streams fixed SQL and a fixed summary:
 
 ```sql
-SELECT c.full_name, d.credit_product, d.overdue_amount, d.days_past_due
-FROM banking_demo.defaulters d
-JOIN banking_demo.customers c USING (customer_id)
-ORDER BY d.overdue_amount DESC;
+SELECT customer_id, company_name, country
+FROM customers
+ORDER BY customer_id
+LIMIT 25;
 ```
 
-The alternative `npm run db:seed` loads `.env`, creates the six public tables and indexes, and inserts
-**4,288 deterministic records**: 8 categories, 30 employees, 150 customers, 100 products,
-1,000 orders, and 3,000 order details. Dates span January 2024 through September 2026.
-Foreign keys connect the records for joins and revenue aggregates. The seed runs in one
-transaction, prints table counts, and uses `ON CONFLICT DO NOTHING` so reruns preserve
-existing rows. Use a dedicated demo database; incompatible existing tables cause a rollback.
-The SQL is also available in `scripts/seed.sql` for PostgreSQL clients.
-Use this seed for the ecommerce database on port 5432; the banking database has a
-separate schema and seed command.
+Production ignores the mock flag. Use a real model for arbitrary schemas.
 
-For deployments, use a database role with only SELECT permission on these six public tables
-for `DATABASE_URL`. Set `DATABASE_SEED_URL` to a separate schema/create/insert connection
-when necessary. The container's credentials are for local development.
-Queries run in a read-only transaction with a 10-second statement timeout and 3-second lock
-timeout. A server-side cursor returns at most 1,000 rows and reports truncation.
+## How a question becomes a result
 
-Gemini is the default provider: set `AI_API_KEY`; `AI_MODEL` defaults to `gemini-3.5-flash`.
-Alternatively set `AI_PROVIDER=openai` and `OPENAI_API_KEY`. Keys and database connection
-strings stay on the server.
+1. `QueryWorkspace` loads schema metadata independently of chat. `NaturalLanguageInput` submits the draft through `useAIQueryGeneration`.
+2. `streamQuery` opens `/api/agent/stream`, sends the request and bounded history, batches preview updates per browser paint, and owns socket cleanup.
+3. `handleQuerySocket` validates input and applies a 180-second deadline. Disconnecting aborts agent/model work.
+4. `runQueryAgent` registers a request-local context. LangChain invokes tools over a shared in-memory MCP connection using an internal request ID.
+5. `construct_sql` reads cached schema, streams provisional SQL, and validates syntax, statement policy, and table references. `execute_query` accepts exactly that generated SQL.
+6. Database execution uses a read-only transaction, a 10-second statement timeout, a 3-second lock timeout, and a cursor capped at 1,000 returned rows. Optional summarization streams a bounded sample to the model.
+7. The final result is validated in the browser. Tables paginate and sort loaded rows; Download CSV exports that same snapshot without running SQL again.
 
-Run `npm run test:db` for connection lifecycle and query-policy checks. To also run the
-live seed/join/aggregate checks against a disposable database:
+SQL and answer tokens are separate. Preview text is provisional until the final result arrives. Numeric values returned by PostgreSQL as strings remain strings to avoid precision loss. Dates become ISO strings; compound values become JSON text. `rowCount` means loaded rows, not total database matches. CSV quotes fields and prefixes formula-like string values with an apostrophe.
+
+## API reference
+
+| Endpoint | Input | Response / behavior |
+| --- | --- | --- |
+| `GET /api/database/schema` | None | `{ tables }` from the shared server schema cache |
+| `POST /api/database/schema` | None | Refreshes server schema and returns `{ tables }` |
+| WebSocket `/api/agent/stream` | `{ request, history? }` | `sql_start`, `token`, `agent_token`, then `result` or `error` |
+| `POST /api/post/agent` | `{ request }` | Non-streaming agent result; does not forward history or request an optional summary |
+| `POST /api/post/query` | `{ query }` | Structured real PostgreSQL result |
+| `POST /api/post/download` | `{ query }` | Re-executes SQL and returns a CSV attachment, capped at 1,000 rows |
+
+Unlike the UI's snapshot download, the CSV HTTP endpoint executes a new query and may see changed data. HTTP routes use Pages Router handlers under `src/pages/api`; the streaming platform adapter is an App Router handler under `src/app/api`.
+
+## Cache ownership
+
+| Cache | Scope | Invalidation |
+| --- | --- | --- |
+| Database pools | Process/global map keyed by connection URL | Process restart; no application eviction policy |
+| Server schema | Process/global weak map keyed by pool | Explicit refresh or restart; failed refresh preserves last success |
+| Browser schema | Module cache plus shared pending request | Successful refresh or page reload |
+| MCP connection | Module-level connection promise | Explicit teardown or process restart; setup failure allows retry |
+| Generation/execution/summary | Request context promises | Disposed after the agent turn; duplicate tool calls reuse work |
+| Model history | Hook ref, bounded by protocol limits | New chat or workspace unmount |
+
+Visible conversation turns retain full result snapshots separately from bounded model history. There is no query-result cache. Current schema refresh is process-local; it does not invalidate other server instances or browser tabs. Prompt files are read per run, while MCP tool descriptions are captured when its connection is created.
+
+## Repository map
+
+```text
+server.ts                         Custom HTTP server and startup ordering
+src/app/
+  page.tsx, layout.tsx, error.tsx  Route, shared shell, render-error recovery
+  api/agent/stream/route.ts       Platform WebSocket adapter
+  comonents/                     UI (existing directory spelling)
+    AIQueryBuilder/              Chat, schema tree, prompt, SQL/answer views
+    editor/                      Read-only CodeMirror setup and styling
+  hooks/                         Async UI lifecycles and table state
+  services/                      Browser transport, agent orchestration, database access
+    mocks/                       Development model factory and deterministic mocks
+    prompts/                     Model and MCP prompt Markdown
+    sql/                         Database catalog introspection SQL
+  types/                         Shared result, schema, and transport contracts
+src/pages/api/                   HTTP schema, agent, query, and CSV handlers
+scripts/                         Dataset provisioning
+tests/                          Node test runner suites
+```
+
+`manualQuery.ts` and `services/resources/database-schema.txt` are legacy fixtures, not the live database/schema implementation. See [the current review](docs/CODE_REVIEW.md) for a proposed folder structure and changes awaiting approval. The earlier [React review](REACT_CODE_REVIEW.md) is historical and contains paths/contracts that have since changed.
+
+## Checks and debugging
 
 ```bash
-DATABASE_TEST_URL=postgresql://query_app:query_app_local@localhost:5432/query_app npm run test:db
+npm test
+npm run lint
+npx tsc --noEmit --incremental false
+npm run build
 ```
 
-### Query agent streaming
+Focused scripts: `test:sql`, `test:db`, `test:mcp`, `test:stream`, `test:manual`, and `test:mockModel`. Live database tests require `DATABASE_TEST_URL`; otherwise they skip. Use a disposable test database. Test outcomes for this refactor are recorded in the review report.
 
-Run `npm run dev` (or `npm run build` followed by `npm start`). These commands use
-the custom Node server in `server.ts`, which serves Next.js and upgrades
-`/api/agent/stream` to a WebSocket on the same port. A deployment must support
-a persistent Node process and forward WebSocket upgrades; serverless Next.js
-API hosting alone cannot serve this endpoint.
+VS Code includes Run Task entries and Run and Debug configurations for all tests, the active test file, and the server with or without mocks. Open a `tests/*.test.ts` file for current-file actions. Stop an existing server on the same port before debugging. Update the explicit test lists in `.vscode/tasks.json` and `.vscode/launch.json` when adding test files.
 
-The browser sends `{ "request": "..." }`. The server sends `sql_start` before each SQL generation, `token` events with
-SQL text chunks, `agent_token` events for the agent response, then a `result` event containing the validated query and PostgreSQL
-results, or an `error` event. The preview is provisional until the result arrives.
-Disconnecting aborts generation. API keys stay on the server, using the existing
-AI_PROVIDER, AI_API_KEY / OPENAI_API_KEY, and AI_MODEL settings.
+## Running a production build
 
-SQL syntax, statement boundaries, and table references are checked with
-`dt-sql-parser`'s PostgreSQL parser. Additional policy restricts queries to one
-SELECT over tables in the selected database schema, rejecting write CTEs, SELECT INTO, and row locks.
-Syntax validation does not verify column existence or guarantee that arbitrary
-SQL functions are free of side effects; use a restricted database role in addition to the
-read-only transaction.
+```bash
+npm run build
+npm start
+```
 
-Run parser regression checks with `npm run test:sql`.
+The default path uses a persistent custom Node server. Its host or reverse proxy must forward WebSocket upgrades. A separate platform route uses an experimental WebSocket adapter; validate that deployment path independently rather than assuming parity with the custom server.
 
-The SQL editor updates with each received chunk and stays disabled during generation.
-Providers choose chunk boundaries: a Gemini chunk can contain many tokens, including
-most of a short query. The app forwards chunks immediately without synthesizing a
-typing animation. `npm run test:stream` verifies callbacks fire while streamed
-provider responses are still open, through the LangChain agent and MCP tools.
+The current application has no caller authentication or table/row authorization. Origin checks do not establish identity. Before exposing a shared database to untrusted callers, choose an access model and workload limits. Use a database role restricted to required reads, with separate seeding privileges. SQL parsing and read-only transactions are complementary safeguards; they do not establish that every callable SQL function is harmless.
 
-### Server database and schema refresh
+## Troubleshooting
 
-Set `DATABASE_URL` in `.env` to your connection URL. For hosted PostgreSQL, use `sslmode=verify-full` to preserve certificate and hostname verification and avoid the `pg` SSL-mode deprecation warning. Preserve any other SSL parameters supplied by your provider.
-Restart the server after configuration changes. Startup authenticates the shared
-Sequelize pool and loads the schema before listening; a database or schema failure
-prevents startup. Browser sessions do not connect, disconnect, or own database pools.
-
-The query workspace is enabled immediately. The schema explorer reads cached metadata
-from `GET /api/database/schema` in the background. Refresh sends `POST` to the same
-endpoint to update the shared schema used by both the explorer and the agent. Metadata
-stays cached until explicit refresh or server restart, so page loads do not query the
-catalogs again. A failed refresh keeps the last successful schema available.
-
-Queries and CSV exports use the same server-configured pool without connection cookies.
-The pool allows up to 10 connections and releases idle connections after 30 seconds;
-Sequelize handles acquiring connections as needed. Results include up to 1,000 rows.
-
-Mock mode still requires a real PostgreSQL database. Its deterministic queries target
-the demo SQL; use the real model for arbitrary schemas.
-
-
-`POST /api/post/query` now returns structured real database results (`columns`, `rows`,
-`rowCount`, `truncated`, `message`). `POST /api/post/download` requires a `query` and exports
-its real results rather than the former demo dataset.
+- **Startup fails:** check `DATABASE_URL`, PostgreSQL reachability, SSL settings, and schema permissions.
+- **Banking connection refused:** the supplied Compose host port is `5434`, not `5433`.
+- **New tables missing:** use Schema explorer → Refresh. Restart after changing the database URL.
+- **Mock query fails:** seed ecommerce and confirm its public `customers` table exists.
+- **Stream closes early:** check custom-server logs, upgrade forwarding, request origin, and deadline limits.
+- **Agent provider fails:** verify both the key and `AI_MODEL`; changing `AI_PROVIDER` does not remove an explicit model override.

@@ -1,6 +1,7 @@
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import type { QueryChatMessage } from "../types/query.types";
 
+/** Translate validated conversation entries into LangChain user and assistant messages. */
 export function toHistoryMessages(history: QueryChatMessage[] = []) {
   return history.map((message) =>
     message.role === "user"
@@ -9,6 +10,7 @@ export function toHistoryMessages(history: QueryChatMessage[] = []) {
   );
 }
 
+/** Flatten supported model text blocks, ignoring non-text content such as tool calls. */
 export function extractText(content: unknown): string {
   if (typeof content === "string") return content;
   if (Array.isArray(content)) {

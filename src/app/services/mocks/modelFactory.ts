@@ -1,11 +1,12 @@
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { MockQueryChatModel } from './mockQueryChatModel';
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { ChatOpenAI } from '@langchain/openai';
-import type { QueryAgentProvider } from '../queryAgent';
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatOpenAI } from "@langchain/openai";
+import type { QueryAgentProvider } from "../queryAgent";
+import { MockQueryChatModel } from "./mockQueryChatModel";
 
-export { MOCK_SQL } from './mockQueryChatModel';
+export { MOCK_SQL } from "./mockQueryChatModel";
 
+/** Construct a deterministic mock or a streaming provider model with automatic retries disabled. */
 export function createQueryModel(config: {
   provider: QueryAgentProvider;
   apiKey: string;
@@ -17,10 +18,13 @@ export function createQueryModel(config: {
     return new MockQueryChatModel(config.request);
   }
   const options = {
-    apiKey: config.apiKey, model: config.modelName,
-    temperature: 0, streaming: true, maxRetries: 0,
+    apiKey: config.apiKey,
+    model: config.modelName,
+    temperature: 0,
+    streaming: true,
+    maxRetries: 0,
   };
-  return config.provider === 'gemini'
+  return config.provider === "gemini"
     ? new ChatGoogleGenerativeAI(options)
     : new ChatOpenAI(options);
 }

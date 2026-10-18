@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { loadDatabaseSchema } from "../services/clientSchema";
 import type { SchemaTable } from "../types/databaseSchema.types";
 
+/** Load shared browser metadata and suppress updates after cleanup without cancelling other subscribers. */
 export function useDatabaseSchema() {
   const [tables, setTables] = useState<SchemaTable[]>([]);
   const [isLoading, setIsLoading] = useState(true);

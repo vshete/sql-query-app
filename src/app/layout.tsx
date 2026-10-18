@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   description: "An AI-assisted PostgreSQL query workspace.",
 };
 
+/** Provide shared fonts, page metadata, and keyboard access to the workspace. */
 export default function RootLayout({
   children,
 }: Readonly<{

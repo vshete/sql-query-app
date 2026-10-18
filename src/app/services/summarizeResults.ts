@@ -3,6 +3,7 @@ import type { QueryRequestContext } from "./queryAgent.types";
 import { appendQueryHistory } from "./queryConversation";
 import { extractText, toHistoryMessages } from "./queryMessages";
 
+/** Summarize a bounded sample of executed rows once, streaming answer text separately from SQL. */
 export async function summarizeResults(
   context: QueryRequestContext,
   request: string,

@@ -5,6 +5,7 @@ import { memo, useDeferredValue, useId, useMemo, useState } from "react";
 import { WorkspaceIcon } from "../WorkspaceIcon";
 import styles from "./queryAgent.module.css";
 
+/** Filter cached tables and columns locally, grouping matches by schema without querying PostgreSQL. */
 export default memo(function SchemaExplorer({
   tables,
   error,

@@ -22,6 +22,7 @@ function toolSignal(context: QueryRequestContext, signal: AbortSignal) {
     : signal;
 }
 
+/** Register validated tools on a linked in-memory MCP client/server pair; close both on setup failure. */
 export async function createQueryMcpConnection(
   prompts: QueryPrompts,
 ): Promise<QueryMcpConnection> {
@@ -29,6 +30,7 @@ export async function createQueryMcpConnection(
   const client = new Client({ name: "query-app-agent", version: "1.0.0" });
   const [clientTransport, serverTransport] =
     InMemoryTransport.createLinkedPair();
+  // Tool schemas extend the model-facing contract with an internal context lookup ID.
   const requestId = z.string().uuid();
 
   const generate = queryToolContracts.construct_sql;
@@ -111,8 +113,11 @@ export async function createQueryMcpConnection(
   }
 }
 
+// One transport pair serves concurrent turns; request IDs isolate their mutable contexts.
+// Descriptions are captured from the prompts used to create the first successful connection.
 let connection: Promise<QueryMcpConnection> | undefined;
 
+/** Share the first connection promise across callers; allow a retry if connection setup fails. */
 export async function getQueryMcpClient(
   prompts: QueryPrompts,
 ): Promise<Client> {

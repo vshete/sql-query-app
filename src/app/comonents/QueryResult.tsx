@@ -13,6 +13,7 @@ interface QueryResultProps {
   isDataLoading?: boolean;
 }
 
+/** Present result status, snapshot export, and the table without owning query execution. */
 export const QueryResult = memo(function QueryResult({
   result,
   errorMessage,

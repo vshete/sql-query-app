@@ -3,6 +3,7 @@ import QueryWorkspace from "./AIQueryBuilder/QueryWorkspace";
 import { WorkspaceIcon } from "./WorkspaceIcon";
 import styles from "./AIQueryBuilder/queryAgent.module.css";
 
+/** Render the server shell around the interactive query workspace. */
 export const AppEntry = () => (
   <div className={styles.appShell}>
     <header className={styles.appHeader}>

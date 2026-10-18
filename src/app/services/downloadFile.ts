@@ -1,3 +1,4 @@
+/** Download a browser Blob and clean up its temporary link and object URL. */
 export function downloadFile(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

@@ -12,6 +12,7 @@ const paths = {
   check: "m5 12 4 4L19 6",
 } as const;
 
+/** Render a decorative shared SVG; the surrounding control supplies its accessible name. */
 export function WorkspaceIcon({
   name,
   size = 16,
