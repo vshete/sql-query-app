@@ -21,6 +21,8 @@ export const QueryResult = memo(function QueryResult({
   const { onDownload, downloadError } = useFileDownload(result);
   const rowCount = result?.rows.length ?? 0;
 
+  if (!result && !errorMessage) return null;
+
   return (
     <div className={styles.resultsPanel} aria-busy={isDataLoading || false}>
       <div className={styles.resultsToolbar}>
@@ -56,23 +58,11 @@ export const QueryResult = memo(function QueryResult({
         <div className={styles.error} role="alert">
           {errorMessage}
         </div>
-      ) : isDataLoading && !result ? (
-        <div className={styles.emptyResults} role="status">
-          <span className={styles.generationSpinner} aria-hidden="true" />
-          <strong>Running your query…</strong>
-          <p>Results will appear here when execution finishes.</p>
-        </div>
       ) : !result || rowCount === 0 ? (
         <div className={styles.emptyResults}>
           <WorkspaceIcon name="table" size={26} />
-          <strong>
-            {result ? "No rows returned" : "Ready for your first query"}
-          </strong>
-          <p>
-            {result
-              ? "Your query completed without returning rows."
-              : "Generate a query to explore your data."}
-          </p>
+          <strong>No rows returned</strong>
+          <p>Your query completed without returning rows.</p>
         </div>
       ) : (
         <ResultTable result={result} isDataLoading={isDataLoading} />
