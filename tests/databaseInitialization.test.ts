@@ -67,20 +67,41 @@ test("boot warms one shared pool; cookie-free page reads use cached schema and o
   }
 });
 
-test("boot failure is surfaced and initialization can retry", async () => {
+test("boot retries a failed connection and shares the successful initialization", async () => {
   const database = new Sequelize("postgresql://server:private@retry.test/db", {
     logging: false,
   });
   let attempts = 0;
   mock.method(database, "authenticate", async () => {
-    if (++attempts === 1) throw new Error("offline");
+    if (++attempts <= 3) throw new Error("offline");
   });
   mock.method(database, "query", async () => []);
   try {
-    await assert.rejects(initializeDatabase(database), /offline/);
+    await Promise.all([initializeDatabase(database), initializeDatabase(database)]);
     await initializeDatabase(database);
+    assert.equal(attempts, 4);
+  } finally {
+    mock.restoreAll();
+  }
+});
+
+test("boot stops after three retries and permits a later initialization", async () => {
+  const database = new Sequelize("postgresql://server:private@offline.test/db", {
+    logging: false,
+  });
+  const offline = new Error("offline");
+  const authenticate = mock.method(database, "authenticate", async () => {
+    throw offline;
+  });
+  const query = mock.method(database, "query", async () => []);
+  try {
+    await assert.rejects(initializeDatabase(database), (error) => error === offline);
+    assert.equal(authenticate.mock.callCount(), 4);
+    assert.equal(query.mock.callCount(), 0);
+    authenticate.mock.mockImplementation(async () => {});
     await initializeDatabase(database);
-    assert.equal(attempts, 2);
+    assert.equal(authenticate.mock.callCount(), 5);
+    assert.equal(query.mock.callCount(), 1);
   } finally {
     mock.restoreAll();
   }

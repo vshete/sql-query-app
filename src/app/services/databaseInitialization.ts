@@ -1,4 +1,5 @@
 import type { Sequelize } from "sequelize";
+import { setTimeout as delay } from "node:timers/promises";
 import { getDatabase } from "./database";
 import { getDatabaseSchema } from "./databaseSchema";
 
@@ -12,7 +13,15 @@ export function initializeDatabase(database = getDatabase()): Promise<void> {
   const existing = initialization.get(database);
   if (existing) return existing;
   const pending = (async () => {
-    await database.authenticate();
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await database.authenticate();
+        break;
+      } catch (error) {
+        if (attempt === 3) throw error;
+        await delay(1000);
+      }
+    }
     await getDatabaseSchema(database);
   })().catch((error: unknown) => {
     initialization.delete(database);

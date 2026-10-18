@@ -15,7 +15,7 @@ cp env.example .env
 npm run dev
 ```
 
-Set your provider, API key, and PostgreSQL connection URL as `DATABASE_URL` in `.env`, then open http://localhost:3000. The server authenticates its shared database pool and loads the schema before accepting requests. The page renders immediately while reading cached schema metadata in the background. Restart the server after changing `.env`. The URL stays on the server; users cannot select or enter a different URL in the UI.
+Set your provider, API key, and PostgreSQL connection URL as `DATABASE_URL` in `.env`, then open http://localhost:3000. The server authenticates its shared database pool and loads the schema before accepting requests. Failed startup connections are retried up to three times after the initial attempt, with a one-second pause between attempts. The page renders immediately while reading cached schema metadata in the background. Restart the server after changing `.env`. The URL stays on the server; users cannot select or enter a different URL in the UI.
 For production, run `npm run build` followed by `npm start`.
 
 To mock model calls during development:
