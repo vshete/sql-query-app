@@ -46,6 +46,7 @@ export async function runQueryAgent(
   const { requestId, dispose } = registerQueryRequest(context);
 
   try {
+    let agentText = "";
     try {
       const agent = createAgent({
         model,
@@ -70,7 +71,10 @@ export async function runQueryAgent(
           !event.tags?.includes("sql-generation")
         ) {
           const token = extractText(event.data.chunk?.content);
-          if (token) options.onAgentToken?.(token);
+          if (token) {
+            agentText += token;
+            options.onAgentToken?.(token);
+          }
         }
       }
     } catch (error) {
@@ -80,10 +84,20 @@ export async function runQueryAgent(
     }
 
     const { generatedSQL, requiredTables, queryResult } = context;
-    if (!generatedSQL || !queryResult) {
+    if (generatedSQL && !queryResult) {
       throw new Error(
-        "The query agent did not complete both required tool calls.",
+        "The query agent generated SQL but did not execute it.",
       );
+    }
+
+    if (!queryResult) {
+      if (!agentText.trim()) throw new Error("The query agent returned no answer.");
+      return {
+        generatedSQL: "",
+        explanation: agentText.trim(),
+        requiredTables: [],
+        warnings: [],
+      };
     }
 
     const result: QueryAgentResult = {

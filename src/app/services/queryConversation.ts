@@ -13,10 +13,10 @@ export function appendQueryHistory(
   const summary = {
     explanation: result.explanation,
     sql: result.generatedSQL,
-    columns: result.queryResult.columns,
-    rowCount: result.queryResult.rowCount,
-    truncated: result.queryResult.truncated,
-    sampleRows: result.queryResult.rows.slice(0, 20),
+    columns: result.queryResult?.columns,
+    rowCount: result.queryResult?.rowCount,
+    truncated: result.queryResult?.truncated,
+    sampleRows: result.queryResult?.rows.slice(0, 20) ?? [],
     sampleOnly: true,
   };
 

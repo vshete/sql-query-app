@@ -95,3 +95,39 @@ test("a failed explicit refresh preserves the last successful shared schema", as
   unavailable = false;
   assert.notEqual(await getDatabaseSchema(pool, true), cached);
 });
+
+test("requests during an initial schema load share the pending query", async () => {
+  let calls = 0;
+  let release!: () => void;
+  let started!: () => void;
+  const waiting = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const querying = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  const pool = {
+    query: async () => {
+      calls++;
+      if (calls === 1) {
+        started();
+        await waiting;
+      }
+      return [table];
+    },
+  } as unknown as Sequelize;
+  const read = getDatabaseSchema(pool);
+  await querying;
+  const refresh = getDatabaseSchema(pool, true);
+  const secondRefresh = getDatabaseSchema(pool, true);
+  release();
+  const [initial, refreshed, duplicate] = await Promise.all([
+    read,
+    refresh,
+    secondRefresh,
+  ]);
+  assert.equal(calls, 1);
+  assert.equal(initial, refreshed);
+  assert.equal(refreshed, duplicate);
+  assert.equal(await getDatabaseSchema(pool), refreshed);
+});

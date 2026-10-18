@@ -128,7 +128,7 @@ test("mock requests stream identical SQL without provider calls and execute thro
         );
         assert.equal(started, 1);
         assert.deepEqual(result.requiredTables, ["customers"]);
-        assert.deepEqual(result.queryResult.rows, [
+        assert.deepEqual(result.queryResult!.rows, [
           { customer_id: "REAL_DB_ROW" },
         ]);
         if (request === "List customers") {
@@ -147,12 +147,12 @@ test("mock requests stream identical SQL without provider calls and execute thro
         .map((call) => call.arguments[0].map((tool) => tool.name))
         .sort(),
       [
-        ["construct_sql"],
-        ["construct_sql"],
-        ["execute_query"],
-        ["execute_query"],
+        ["construct_sql", "execute_query"],
+        ["construct_sql", "execute_query"],
+        ["construct_sql", "execute_query"],
+        ["construct_sql", "execute_query"],
       ],
-      "the shared agent binds construction first and execution after SQL generation",
+      "the agent exposes both MCP tools at every step",
     );
     assert.equal(connect.mock.callCount(), 2);
     assert.equal(

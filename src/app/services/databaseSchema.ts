@@ -13,7 +13,10 @@ export interface DatabaseSchema {
   fetchedAt: number;
 }
 
-type CacheEntry = { value?: DatabaseSchema; pending?: Promise<DatabaseSchema> };
+type CacheEntry = {
+  value?: DatabaseSchema;
+  pending?: Promise<DatabaseSchema>;
+};
 
 const state = globalThis as typeof globalThis & {
   queryAppSchemaCache?: WeakMap<Sequelize, CacheEntry>;
@@ -31,10 +34,12 @@ export async function getDatabaseSchema(
   refresh = false,
 ): Promise<DatabaseSchema> {
   let entry = cache.get(database);
+
   if (!entry) {
     entry = {};
     cache.set(database, entry);
   }
+
   if (entry.pending) return entry.pending;
   if (!refresh && entry.value) return entry.value;
 
@@ -101,6 +106,7 @@ export async function getDatabaseSchema(
     current.value = value;
     return value;
   })();
+
   try {
     return await current.pending;
   } finally {

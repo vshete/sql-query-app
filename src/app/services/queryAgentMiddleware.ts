@@ -1,6 +1,5 @@
 import { createMiddleware } from "langchain";
 import type { QueryRequestContext } from "./queryAgent.types";
-import { queryToolContracts } from "./queryToolContracts";
 
 export function createQueryAgentMiddleware(context: QueryRequestContext) {
   return createMiddleware({
@@ -10,20 +9,9 @@ export function createQueryAgentMiddleware(context: QueryRequestContext) {
       hook: () => {
         if (context.toolError) throw context.toolError;
         if (context.queryResult) return { jumpTo: "end" as const };
-        if (++context.modelCalls > 4)
+        if (++context.modelCalls > 6)
           throw new Error("Query agent model call limit reached");
       },
     },
-    wrapModelCall: (request, handler) =>
-      handler({
-        ...request,
-        tools: request.tools.filter(
-          (entry) =>
-            entry.name ===
-            (context.generatedSQL
-              ? queryToolContracts.execute_query.name
-              : queryToolContracts.construct_sql.name),
-        ),
-      }),
   });
 }

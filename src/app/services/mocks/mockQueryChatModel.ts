@@ -15,9 +15,11 @@ export class MockQueryChatModel extends FakeListChatModel {
     super({ responses: [MOCK_SQL, MOCK_SUMMARY], sleep: MOCK_SQL_CHUNK_DELAY_MS });
   }
 
+  private toolCalls = 0;
+
   override bindTools(tools: Parameters<FakeListChatModel['bindTools']>[0]) {
-    const selected = tools.find((tool) => tool.name === 'construct_sql')
-      ?? tools.find((tool) => tool.name === 'execute_query');
+    const name = this.toolCalls++ === 0 ? 'construct_sql' : 'execute_query';
+    const selected = tools.find((tool) => tool.name === name);
     if (!selected) throw new Error('Mock model requires a query tool.');
 
     return new FakeStreamingChatModel({

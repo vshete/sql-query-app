@@ -79,9 +79,7 @@ test("SQL and agent chunks arrive before their responses finish, through MCP", a
         .sort(),
       current === 2
         ? []
-        : current === 1
-          ? ["construct_sql"]
-          : ["execute_query"],
+        : ["construct_sql", "execute_query"],
     );
     if (current === 1 || current === 3) {
       const name = current === 1 ? "construct_sql" : "execute_query";
@@ -160,7 +158,7 @@ test("SQL and agent chunks arrive before their responses finish, through MCP", a
     assert.equal(calls, 3);
     assert.equal(result.generatedSQL, sqlTokens.join(""));
     assert.equal(agentTokens.join(""), "Working. Working. ");
-    assert.equal(result.queryResult.rowCount, 1);
+    assert.equal(result.queryResult!.rowCount, 1);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -255,7 +253,7 @@ test("concurrent requests reuse MCP initialization and isolate their models and 
         );
         assert.equal(result.generatedSQL, `SELECT * FROM ${table};`);
         assert.deepEqual(result.requiredTables, [table]);
-        assert.equal(result.queryResult.rowCount, 1);
+        assert.equal(result.queryResult!.rowCount, 1);
         assert.equal(sqlTokens.join(""), result.generatedSQL);
         assert.equal(agentTokens.join(""), "");
         assert.equal(sqlStarts, 1);
@@ -387,7 +385,7 @@ for (const duplicateBatch of [false, true]) {
         },
       );
       assert.equal(result.generatedSQL, "SELECT * FROM customers;");
-      assert.equal(result.queryResult.rowCount, 1);
+      assert.equal(result.queryResult!.rowCount, 1);
       assert.equal(generations, 1);
       assert.equal(starts, 1);
       assert.equal(tokens.join(""), result.generatedSQL);
@@ -538,7 +536,7 @@ test("follow-up context reaches both agent and SQL generator, with a grounded te
       { history, summarizeResults: true, onAgentToken: (token) => agentTokens.push(token) },
     );
     assert.equal(calls, 4);
-    assert.equal(result.queryResult.rowCount, 1);
+    assert.equal(result.queryResult!.rowCount, 1);
     assert.equal(
       result.explanation,
       "The query returned one matching customer.",
@@ -569,7 +567,7 @@ test("an optional summary failure preserves the successfully executed table", as
       "test",
       { summarizeResults: true },
     );
-    assert.equal(result.queryResult.rowCount, 1);
+    assert.equal(result.queryResult!.rowCount, 1);
     assert.ok(
       result.warnings.some((warning) => warning.includes("text summary")),
     );

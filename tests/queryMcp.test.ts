@@ -129,3 +129,54 @@ test("MCP advertises output contracts and a timed-out call cancels its model str
     await connection.close();
   }
 });
+
+for (const request of ["Why did the previous query use LIMIT?", "Can you help me query the database?"]) {
+  test(`the agent can answer without MCP calls: ${request}`, async () => {
+    const { runQueryAgent } = await import("../src/app/services/queryAgent");
+    const { appendQueryHistory } = await import("../src/app/services/queryConversation");
+    const { parseAgentResult } = await import("../src/app/services/clientValidation");
+    const originalFetch = globalThis.fetch;
+    const history = [
+      { role: "user" as const, content: "Show five customers" },
+      { role: "assistant" as const, content: JSON.stringify({ sql: "SELECT * FROM customers LIMIT 5;", sampleOnly: true }) },
+    ];
+    const answer = request.startsWith("Why")
+      ? "LIMIT 5 caps the earlier query at five customers."
+      : "Which records would you like to see?";
+    const tokens: string[] = [];
+    let calls = 0;
+    const client = await (await import("../src/app/services/queryAgentMCP")).getQueryMcpClient(await loadQueryPrompts());
+    const toolCall = mock.method(client, "callTool", async () => {
+      assert.fail("a conversational answer must not call an MCP tool");
+    });
+    globalThis.fetch = async (_input, init) => {
+      calls++;
+      const body = JSON.parse(String(init?.body));
+      assert.deepEqual(body.tools.map((entry: { function: { name: string } }) => entry.function.name).sort(), ["construct_sql", "execute_query"]);
+      assert.match(JSON.stringify(body.messages[0].content), /Answer directly without tools/);
+      assert.ok(body.messages.some((message: { content: string }) => message.content === history[1].content));
+      const chunk = { id: "answer", object: "chat.completion.chunk", created: 1, model: "test", choices: [{ index: 0, delta: { role: "assistant", content: answer }, finish_reason: null }] };
+      return new Response(`data: ${JSON.stringify(chunk)}\n\ndata: [DONE]\n\n`, { headers: { "content-type": "text/event-stream" } });
+    };
+    try {
+      const result = await runQueryAgent(request, "openai", "test", "test", {
+        history, summarizeResults: true,
+        onAgentToken: (token) => tokens.push(token),
+        onSqlStart: () => assert.fail("no SQL generation should start"),
+        onToken: () => assert.fail("no SQL should stream"),
+      });
+      assert.equal(calls, 1);
+      assert.equal(toolCall.mock.callCount(), 0);
+      assert.equal(result.explanation, answer);
+      assert.equal(tokens.join(""), answer);
+      assert.equal(result.generatedSQL, "");
+      assert.equal(result.queryResult, undefined);
+      assert.deepEqual(parseAgentResult(JSON.parse(JSON.stringify(result))), result);
+      const next = appendQueryHistory(history, request, result);
+      assert.equal(JSON.parse(next.at(-1)!.content).explanation, answer);
+    } finally {
+      globalThis.fetch = originalFetch;
+      toolCall.mock.restore();
+    }
+  });
+}

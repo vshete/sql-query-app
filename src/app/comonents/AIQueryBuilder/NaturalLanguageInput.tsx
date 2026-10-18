@@ -145,11 +145,11 @@ const ConversationTurn = memo(function ConversationTurn({
       </div>
       <div className={styles.assistantMessage}>
         <strong>Query assistant</strong>
-        <QueryPreview
+        {turn.streamedSQL && <QueryPreview
           sql={turn.streamedSQL}
           isGenerating={isGenerating}
           error={turn.error}
-        />
+        />}
         {responseText && <AgentResponse text={responseText} />}
         {!!turn.result?.warnings.length && (
           <ul className={styles.queryWarnings} aria-label="Query warnings">

@@ -35,7 +35,7 @@ test("context preserves SQL and result metadata while explicitly sampling rows",
   assert.equal(answer.sampleOnly, true);
   assert.equal(answer.sampleRows.length, 20);
   assert.deepEqual(parseQueryHistory(history), history);
-  assert.deepEqual(result.queryResult.rows.length, 100);
+  assert.deepEqual(result.queryResult!.rows.length, 100);
 });
 
 test("long conversations retain recent complete pairs within the context budget", () => {

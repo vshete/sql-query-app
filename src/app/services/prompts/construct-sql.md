@@ -1,1 +1,1 @@
-Create a safe PostgreSQL SELECT from the user's request using the cached live schema of the connected database.
+Create a safe PostgreSQL SELECT using the cached live schema when the request requires new or changed SQL or new database results. Include relevant context from earlier turns in the request. Explanations and questions already answerable from conversation history do not need this tool.

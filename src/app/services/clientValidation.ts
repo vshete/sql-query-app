@@ -83,16 +83,21 @@ export function parseAgentResult(value: unknown): QueryAgentResult {
     typeof value.generatedSQL !== "string" ||
     typeof value.explanation !== "string" ||
     !isStringArray(value.requiredTables) ||
-    !isStringArray(value.warnings)
+    !isStringArray(value.warnings) ||
+    (value.queryResult === undefined &&
+      (value.generatedSQL !== "" || !value.explanation.trim()))
   ) {
     throw new Error("Invalid query agent response.");
   }
+
   return {
     generatedSQL: value.generatedSQL,
     explanation: value.explanation,
     requiredTables: value.requiredTables,
     warnings: value.warnings,
-    queryResult: parseQueryResult(value.queryResult),
+    ...(value.queryResult === undefined
+      ? {}
+      : { queryResult: parseQueryResult(value.queryResult) }),
   };
 }
 

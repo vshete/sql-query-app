@@ -218,7 +218,7 @@ provider responses are still open, through the LangChain agent and MCP tools.
 
 ### Server database and schema refresh
 
-Set `DATABASE_URL` in `.env` to your connection URL, including its SSL parameters.
+Set `DATABASE_URL` in `.env` to your connection URL. For hosted PostgreSQL, use `sslmode=verify-full` to preserve certificate and hostname verification and avoid the `pg` SSL-mode deprecation warning. Preserve any other SSL parameters supplied by your provider.
 Restart the server after configuration changes. Startup authenticates the shared
 Sequelize pool and loads the schema before listening; a database or schema failure
 prevents startup. Browser sessions do not connect, disconnect, or own database pools.

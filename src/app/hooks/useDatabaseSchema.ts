@@ -10,9 +10,10 @@ export function useDatabaseSchema() {
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState({ id: 0, refresh: false });
   const refreshSchema = useCallback(() => {
+    if (isLoading) return;
     setIsLoading(true);
     setAttempt((value) => ({ id: value.id + 1, refresh: true }));
-  }, []);
+  }, [isLoading]);
 
   useEffect(() => {
     let cancelled = false;

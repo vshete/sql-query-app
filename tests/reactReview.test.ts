@@ -42,7 +42,7 @@ const result: QueryAgentResult = {
 };
 
 test("external data validation rejects nulls, invalid columns and inconsistent row counts", () => {
-  assert.equal(parseAgentResult(result).queryResult.rowCount, 1);
+  assert.equal(parseAgentResult(result).queryResult!.rowCount, 1);
   assert.throws(() => parseSchemaInfo(null), /Invalid/);
   assert.throws(
     () => parseSchemaInfo({ connected: true, tables: [{ name: "broken" }] }),

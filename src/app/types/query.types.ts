@@ -14,7 +14,7 @@ export interface QueryAgentResult {
   explanation: string;
   requiredTables: string[];
   warnings: string[];
-  queryResult: DatabaseQueryResult;
+  queryResult?: DatabaseQueryResult;
 }
 
 export interface QueryChatMessage {
