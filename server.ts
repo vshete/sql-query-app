@@ -1,8 +1,8 @@
 import next from "next";
 import { createServer } from "node:http";
-import { initializeDatabase } from "./src/app/services/databaseInitialization";
-import { configureMockModelMode } from "./src/app/services/mocks/mockMode";
-import { createQueryHttpServer } from "./src/app/services/queryHttpServer";
+import { initializeDatabase } from "./src/lib/server/database/databaseInitialization";
+import { configureMockModelMode } from "./src/lib/server/agent/mocks/mockMode";
+import { createQueryHttpServer } from "./src/lib/server/transport/queryHttpServer";
 
 /** Prepare Next.js and warm the database before opening the custom HTTP/WebSocket server. */
 async function main() {

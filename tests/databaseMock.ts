@@ -1,6 +1,6 @@
 import { mock } from "node:test";
 import type { QueryOptions, Transaction } from "sequelize";
-import { getDatabase } from "../src/app/services/database";
+import { getDatabase } from "../src/lib/server/database/database";
 
 interface TestClient {
   query(sql: string): Promise<{ rows: object[]; fields: { name: string }[] }>;

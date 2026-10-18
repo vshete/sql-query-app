@@ -1,8 +1,8 @@
-import { getAgentConfig } from "@/app/services/agentConfig";
-import { getDatabase } from "@/app/services/database";
-import { runQueryAgent } from "@/app/services/queryAgent";
-import { isSameHostOrigin } from "@/app/services/requestOrigin";
-import { MAX_REQUEST_LENGTH } from "@/app/types/queryProtocol";
+import { getAgentConfig } from "@/lib/server/agent/agentConfig";
+import { getDatabase } from "@/lib/server/database/database";
+import { runQueryAgent } from "@/lib/server/agent/queryAgent";
+import { isSameHostOrigin } from "@/lib/server/transport/requestOrigin";
+import { MAX_REQUEST_LENGTH } from "@/types/queryProtocol";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 /**

@@ -3,7 +3,7 @@ import { EventEmitter } from "node:events";
 import { test } from "node:test";
 import { WebSocket } from "ws";
 import { GET } from "../src/app/api/agent/stream/route";
-import { handleQuerySocket } from "../src/app/services/querySocket";
+import { handleQuerySocket } from "../src/lib/server/transport/querySocket";
 
 test("the deployed route rejects missing/cross-site origins and ordinary HTTP", async () => {
   for (const origin of [undefined, "https://other.example"]) {

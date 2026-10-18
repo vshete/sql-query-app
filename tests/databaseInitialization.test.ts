@@ -2,8 +2,8 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import assert from "node:assert/strict";
 import { mock, test } from "node:test";
 import { Sequelize } from "sequelize";
-import { getDatabase } from "../src/app/services/database";
-import { initializeDatabase } from "../src/app/services/databaseInitialization";
+import { getDatabase } from "../src/lib/server/database/database";
+import { initializeDatabase } from "../src/lib/server/database/databaseInitialization";
 import handler from "../src/pages/api/database/schema";
 
 async function request(method: string, origin?: string) {

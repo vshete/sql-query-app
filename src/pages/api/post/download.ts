@@ -1,7 +1,7 @@
-import { executeDatabaseQuery, getDatabase } from "@/app/services/database";
+import { executeDatabaseQuery, getDatabase } from "@/lib/server/database/database";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { queryResultCsv } from "@/app/services/queryResults";
-import { isSameHostOrigin } from "@/app/services/requestOrigin";
+import { queryResultCsv } from "@/lib/shared/queryResults";
+import { isSameHostOrigin } from "@/lib/server/transport/requestOrigin";
 
 /**
  * Accepts a POST with a SQL query and executes it using the server-owned pool.

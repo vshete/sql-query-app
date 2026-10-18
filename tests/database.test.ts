@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mock, test } from "node:test";
 import { QueryTypes, Sequelize } from "sequelize";
-import { executeDatabaseQuery } from "../src/app/services/database";
+import { executeDatabaseQuery } from "../src/lib/server/database/database";
 import { mockDatabaseClient, transactionQuery } from "./databaseMock";
 mock.method(Sequelize.prototype, "query", transactionQuery);
 

@@ -2,12 +2,12 @@ import { test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { ChatOpenAI } from "@langchain/openai";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { AGENT_TIMEOUT_MS } from "../src/app/types/queryProtocol";
-import type { QueryRequestContext } from "../src/app/services/queryAgent.types";
-import { createQueryMcpConnection } from "../src/app/services/queryAgentMCP";
-import { callQueryTool } from "../src/app/services/queryAgentTools";
-import { loadQueryPrompts } from "../src/app/services/queryPrompts";
-import { registerQueryRequest } from "../src/app/services/queryRequestStore";
+import { AGENT_TIMEOUT_MS } from "../src/types/queryProtocol";
+import type { QueryRequestContext } from "../src/lib/server/agent/queryAgent.types";
+import { createQueryMcpConnection } from "../src/lib/server/agent/queryAgentMCP";
+import { callQueryTool } from "../src/lib/server/agent/queryAgentTools";
+import { loadQueryPrompts } from "../src/lib/server/agent/queryPrompts";
+import { registerQueryRequest } from "../src/lib/server/agent/queryRequestStore";
 
 test("the bridge sets the application timeout, forwards cancellation, and rejects malformed output", async () => {
   const client = new Client({ name: "test", version: "1" });
@@ -132,9 +132,9 @@ test("MCP advertises output contracts and a timed-out call cancels its model str
 
 for (const request of ["Why did the previous query use LIMIT?", "Can you help me query the database?"]) {
   test(`the agent can answer without MCP calls: ${request}`, async () => {
-    const { runQueryAgent } = await import("../src/app/services/queryAgent");
-    const { appendQueryHistory } = await import("../src/app/services/queryConversation");
-    const { parseAgentResult } = await import("../src/app/services/clientValidation");
+    const { runQueryAgent } = await import("../src/lib/server/agent/queryAgent");
+    const { appendQueryHistory } = await import("../src/lib/shared/queryConversation");
+    const { parseAgentResult } = await import("../src/lib/client/clientValidation");
     const originalFetch = globalThis.fetch;
     const history = [
       { role: "user" as const, content: "Show five customers" },
@@ -145,7 +145,7 @@ for (const request of ["Why did the previous query use LIMIT?", "Can you help me
       : "Which records would you like to see?";
     const tokens: string[] = [];
     let calls = 0;
-    const client = await (await import("../src/app/services/queryAgentMCP")).getQueryMcpClient(await loadQueryPrompts());
+    const client = await (await import("../src/lib/server/agent/queryAgentMCP")).getQueryMcpClient(await loadQueryPrompts());
     const toolCall = mock.method(client, "callTool", async () => {
       assert.fail("a conversational answer must not call an MCP tool");
     });

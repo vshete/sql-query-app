@@ -4,20 +4,20 @@ import {
   parseAgentResult,
   parseQueryResult,
   parseSchemaInfo,
-} from "../src/app/services/clientValidation";
+} from "../src/lib/client/clientValidation";
 import {
   compareQueryValues,
   formatQueryValue,
   queryResultCsv,
-} from "../src/app/services/queryResults";
-import { streamQuery } from "../src/app/services/queryStream";
-import { isSameHostOrigin } from "../src/app/services/requestOrigin";
-import type { QueryAgentResult } from "../src/app/types/query.types";
+} from "../src/lib/shared/queryResults";
+import { streamQuery } from "../src/lib/client/queryStream";
+import { isSameHostOrigin } from "../src/lib/server/transport/requestOrigin";
+import type { QueryAgentResult } from "../src/types/query.types";
 import {
   MAX_REQUEST_LENGTH,
   MAX_REQUEST_PAYLOAD_BYTES,
   MAX_STREAM_TEXT_LENGTH,
-} from "../src/app/types/queryProtocol";
+} from "../src/types/queryProtocol";
 
 import {
   createTable,
@@ -25,7 +25,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
 } from "@tanstack/react-table";
-import { createResultColumns } from "../src/app/hooks/useQueryResultTable";
+import { createResultColumns } from "../src/hooks/useQueryResultTable";
 
 const result: QueryAgentResult = {
   generatedSQL: "SELECT id FROM orders;",

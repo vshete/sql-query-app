@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   getManualQueryCsv,
   getManualQueryPage,
-} from "../src/app/services/manualQuery";
+} from "./fixtures/manualQuery";
 
 test("manual pagination reconstructs the download without skipped or repeated rows", () => {
   const first = getManualQueryPage(1, 10)!;

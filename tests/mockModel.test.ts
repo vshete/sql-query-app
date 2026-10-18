@@ -28,11 +28,11 @@ mock.method(
 import {
   configureMockModelMode,
   isMockModelEnabled,
-} from "../src/app/services/mocks/mockMode";
-import { MOCK_SQL } from "../src/app/services/mocks/modelFactory";
-import { MOCK_SUMMARY, MockQueryChatModel } from "../src/app/services/mocks/mockQueryChatModel";
-import { getAgentConfig } from "../src/app/services/agentConfig";
-import { runQueryAgent } from "../src/app/services/queryAgent";
+} from "../src/lib/server/agent/mocks/mockMode";
+import { MOCK_SQL } from "../src/lib/server/agent/modelFactory";
+import { MOCK_SUMMARY, MockQueryChatModel } from "../src/lib/server/agent/mocks/mockQueryChatModel";
+import { getAgentConfig } from "../src/lib/server/agent/agentConfig";
+import { runQueryAgent } from "../src/lib/server/agent/queryAgent";
 
 function saveEnvironment() {
   const saved = { ...process.env };

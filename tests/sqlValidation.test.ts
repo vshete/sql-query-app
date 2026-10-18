@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanAndValidateSql } from "../src/app/services/sqlValidation";
+import { cleanAndValidateSql } from "../src/lib/server/database/sqlValidation";
 
 test("validates joins, quoted identifiers, CTEs and nested queries", () => {
   assert.deepEqual(

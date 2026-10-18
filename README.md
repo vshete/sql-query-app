@@ -137,21 +137,26 @@ server.ts                         Custom HTTP server and startup ordering
 src/app/
   page.tsx, layout.tsx, error.tsx  Route, shared shell, render-error recovery
   api/agent/stream/route.ts       Platform WebSocket adapter
-  comonents/                     UI (existing directory spelling)
-    AIQueryBuilder/              Chat, schema tree, prompt, SQL/answer views
-    editor/                      Read-only CodeMirror setup and styling
-  hooks/                         Async UI lifecycles and table state
-  services/                      Browser transport, agent orchestration, database access
-    mocks/                       Development model factory and deterministic mocks
-    prompts/                     Model and MCP prompt Markdown
-    sql/                         Database catalog introspection SQL
-  types/                         Shared result, schema, and transport contracts
+src/components/query/            Workspace, prompt, schema tree, results
+  manual/                        Retained manual SQL UI (not mounted)
+src/components/editor/           CodeMirror setup and styling
+src/hooks/                       Async UI lifecycles and table state
+src/lib/client/                  Browser HTTP, socket, schema cache, downloads
+src/lib/server/agent/            Agent, MCP, provider factory, mocks, prompts
+src/lib/server/database/         Pool, initialization, schema SQL, execution
+src/lib/server/transport/        HTTP/WebSocket server and origin checks
+src/lib/shared/                  Scalar formatting, CSV, conversation helpers
+src/types/                       Shared result, schema, and transport contracts
 src/pages/api/                   HTTP schema, agent, query, and CSV handlers
 scripts/                         Dataset provisioning
 tests/                          Node test runner suites
 ```
 
-`manualQuery.ts` and `services/resources/database-schema.txt` are legacy fixtures, not the live database/schema implementation. See [the current review](docs/CODE_REVIEW.md) for a proposed folder structure and changes awaiting approval. The earlier [React review](REACT_CODE_REVIEW.md) is historical and contains paths/contracts that have since changed.
+`tests/fixtures/` holds the legacy manual CSV and static schema text; production code uses live PostgreSQL metadata. The provider factory and deterministic model remain server-owned because mock mode is a supported development runtime.
+
+`npm test` checks the local import graph so components, hooks, browser helpers, shared helpers, and wire types cannot transitively import server modules or Node dependencies. We avoid the bare `server-only` package marker: its default Node export throws during direct `tsx server.ts` and Node test execution. The graph check enforces the boundary without changing Node resolution conditions. Keep runtime prompts and catalog SQL under `src/lib/server/`; `next.config.ts` explicitly includes them in production file tracing. Run the custom server from the repository root.
+
+See [the current review](docs/CODE_REVIEW.md). The earlier [React review](REACT_CODE_REVIEW.md) is historical and contains paths/contracts that have since changed.
 
 ## Checks and debugging
 

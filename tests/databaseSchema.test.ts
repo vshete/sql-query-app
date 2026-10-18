@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Sequelize } from "sequelize";
-import { getDatabaseSchema } from "../src/app/services/databaseSchema";
-import { cleanAndValidateSql } from "../src/app/services/sqlValidation";
+import { getDatabaseSchema } from "../src/lib/server/database/databaseSchema";
+import { cleanAndValidateSql } from "../src/lib/server/database/sqlValidation";
 
 const table = {
   schema: "analytics",

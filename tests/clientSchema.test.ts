@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { beforeEach, mock, test } from "node:test";
-let loadDatabaseSchema: typeof import("../src/app/services/clientSchema").loadDatabaseSchema;
+let loadDatabaseSchema: typeof import("../src/lib/client/clientSchema").loadDatabaseSchema;
 let moduleId = 0;
 beforeEach(async () => {
   ({ loadDatabaseSchema } = await import(
-    `../src/app/services/clientSchema.ts?test=${moduleId++}`
+    `../src/lib/client/clientSchema.ts?test=${moduleId++}`
   ));
 });
 

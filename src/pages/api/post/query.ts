@@ -1,5 +1,5 @@
-import { executeDatabaseQuery, getDatabase } from "@/app/services/database";
-import { isSameHostOrigin } from "@/app/services/requestOrigin";
+import { executeDatabaseQuery, getDatabase } from "@/lib/server/database/database";
+import { isSameHostOrigin } from "@/lib/server/transport/requestOrigin";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 /**

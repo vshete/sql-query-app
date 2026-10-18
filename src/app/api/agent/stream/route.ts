@@ -1,6 +1,6 @@
-import { handleQuerySocket } from "@/app/services/querySocket";
-import { isSameHostOrigin } from "@/app/services/requestOrigin";
-import { MAX_REQUEST_PAYLOAD_BYTES } from "@/app/types/queryProtocol";
+import { handleQuerySocket } from "@/lib/server/transport/querySocket";
+import { isSameHostOrigin } from "@/lib/server/transport/requestOrigin";
+import { MAX_REQUEST_PAYLOAD_BYTES } from "@/types/queryProtocol";
 import { experimental_upgradeWebSocket } from "@vercel/functions";
 
 export const runtime = "nodejs";

@@ -1,5 +1,5 @@
-import { getDatabaseSchema } from "@/app/services/databaseSchema";
-import { isSameHostOrigin } from "@/app/services/requestOrigin";
+import { getDatabaseSchema } from "@/lib/server/database/databaseSchema";
+import { isSameHostOrigin } from "@/lib/server/transport/requestOrigin";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 /** GET reads cached metadata; POST explicitly refreshes it. Neither owns a connection. */

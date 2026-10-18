@@ -3,15 +3,15 @@ import assert from "node:assert/strict";
 import {
   appendQueryHistory,
   parseQueryHistory,
-} from "../src/app/services/queryConversation";
+} from "../src/lib/shared/queryConversation";
 import {
   MAX_HISTORY_LENGTH,
   MAX_HISTORY_MESSAGES,
-} from "../src/app/types/queryProtocol";
+} from "../src/types/queryProtocol";
 import type {
   QueryAgentResult,
   QueryChatMessage,
-} from "../src/app/types/query.types";
+} from "../src/types/query.types";
 
 const result: QueryAgentResult = {
   generatedSQL: "SELECT * FROM customers;",

@@ -36,7 +36,7 @@ mockDatabaseClient(async () => ({
   },
   release: () => {},
 }));
-import { runQueryAgent } from "../src/app/services/queryAgent";
+import { runQueryAgent } from "../src/lib/server/agent/queryAgent";
 
 test("request cancellation preserves its reason without logging a SQL failure", async () => {
   const controller = new AbortController();

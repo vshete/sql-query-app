@@ -3,7 +3,7 @@ import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { Duplex } from "node:stream";
 import { test } from "node:test";
 import next from "next";
-import { createQueryHttpServer } from "../src/app/services/queryHttpServer";
+import { createQueryHttpServer } from "../src/lib/server/transport/queryHttpServer";
 
 test("Next's lazy upgrade setup cannot close query sockets and still receives HMR", async () => {
   const nextUpgradeServer = createServer();
