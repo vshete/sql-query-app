@@ -1,3 +1,4 @@
+import { QUERY_PROGRESS } from "../../../types/queryProtocol";
 import { getDatabaseSchema } from "../database/databaseSchema";
 import type { QueryRequestContext } from "./queryAgent.types";
 import { extractText, toHistoryMessages } from "./queryMessages";
@@ -24,6 +25,7 @@ export async function generateSql(
     );
 
     signal?.throwIfAborted();
+    options.onProgress?.(QUERY_PROGRESS.GENERATING_SQL);
     options.onSqlStart?.();
     let sqlText = "";
     const stream = await model.stream(

@@ -65,6 +65,7 @@ export function handleQuerySocket(ws: WebSocket) {
           summarizeResults: true,
           database,
           signal: controller.signal,
+          onProgress: (stage) => send({ type: "progress", stage }),
           onSqlStart: () => send({ type: "sql_start" }),
           onToken: (token) => send({ type: "token", token }),
           onAgentToken: (token) => send({ type: "agent_token", token }),

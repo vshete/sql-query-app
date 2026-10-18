@@ -4,6 +4,7 @@ import {
   useAIQueryGeneration,
   type QueryTurn,
 } from "@/hooks/useAIQueryGeneration";
+import { QUERY_PROGRESS_MESSAGES } from "@/types/queryProtocol";
 import dynamic from "next/dynamic";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { QueryResult } from "./QueryResult";
@@ -31,6 +32,8 @@ export default function NaturalLanguageInput({
   const [input, setInput] = useState("");
   const {
     generateQuery,
+    cancel,
+    progress,
     reset,
     request,
     previousTurns,
@@ -111,19 +114,23 @@ export default function NaturalLanguageInput({
           )}
           {hasStarted && <div ref={latestTurn} />}
         </section>
-        <QueryPrompt
-          input={input}
-          onInputChange={setInput}
-          onGenerate={handleGenerateQuery}
-          disabled={disabled}
-          isGenerating={isGenerating || isLoading}
-          placeholder={placeholder}
-        />
-        {isGenerating && (
-          <div className={styles.generationStatus} role="status">
+        {isGenerating ? (
+          <div className={styles.generationStatus}>
             <span className={styles.generationSpinner} aria-hidden="true" />
-            <span>Generating response…</span>
+            <span role="status">{QUERY_PROGRESS_MESSAGES[progress]}</span>
+            <button type="button" className={styles.clearBtn} onClick={cancel}>
+              Cancel
+            </button>
           </div>
+        ) : (
+          <QueryPrompt
+            input={input}
+            onInputChange={setInput}
+            onGenerate={handleGenerateQuery}
+            disabled={disabled}
+            isGenerating={isLoading}
+            placeholder={placeholder}
+          />
         )}
       </div>
     </main>

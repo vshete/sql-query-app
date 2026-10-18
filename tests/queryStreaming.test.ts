@@ -1,7 +1,8 @@
-import { test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { mock, test } from "node:test";
 import { Sequelize, type QueryOptions } from "sequelize";
+import { runQueryAgent } from "../src/lib/server/agent/queryAgent";
 import { mockDatabaseClient, transactionQuery } from "./databaseMock";
 mock.method(
   Sequelize.prototype,
@@ -36,11 +37,13 @@ mockDatabaseClient(async () => ({
   },
   release: () => {},
 }));
-import { runQueryAgent } from "../src/lib/server/agent/queryAgent";
 
 test("request cancellation preserves its reason without logging a SQL failure", async () => {
   const controller = new AbortController();
-  const reason = new DOMException("Query connection closed before completion.", "AbortError");
+  const reason = new DOMException(
+    "Query connection closed before completion.",
+    "AbortError",
+  );
   controller.abort(reason);
   const errors = mock.method(console, "error", () => {});
   try {
@@ -77,9 +80,7 @@ test("SQL and agent chunks arrive before their responses finish, through MCP", a
       (body.tools ?? [])
         .map((entry: { function: { name: string } }) => entry.function.name)
         .sort(),
-      current === 2
-        ? []
-        : ["construct_sql", "execute_query"],
+      current === 2 ? [] : ["construct_sql", "execute_query"],
     );
     if (current === 1 || current === 3) {
       const name = current === 1 ? "construct_sql" : "execute_query";
@@ -409,7 +410,7 @@ test("an agent that keeps requesting construction hits the model budget without 
       return streamResponse({ content: "SELECT * FROM customers;" });
     }
     modelCalls++;
-    assert.ok(modelCalls <= 4, "no provider request beyond the budget");
+    assert.ok(modelCalls <= 6, "no provider request beyond the budget");
     return streamResponse(toolDelta(["construct_sql"]));
   };
   try {
@@ -417,7 +418,7 @@ test("an agent that keeps requesting construction hits the model budget without 
       runQueryAgent("List customers", "openai", "test-key", "test"),
       /Query agent model call limit reached/,
     );
-    assert.equal(modelCalls, 4);
+    assert.equal(modelCalls, 6);
     assert.equal(generations, 1);
   } finally {
     globalThis.fetch = originalFetch;
@@ -486,6 +487,7 @@ test("a database failure stops without more model calls", async () => {
 });
 
 test("follow-up context reaches both agent and SQL generator, with a grounded text summary", async () => {
+  const progress: string[] = [];
   const originalFetch = globalThis.fetch;
   let calls = 0;
   const agentTokens: string[] = [];
@@ -513,7 +515,9 @@ test("follow-up context reaches both agent and SQL generator, with a grounded te
     }
     if (calls === 4) {
       assert.ok(body.messages.at(-1).content.includes('"rowCount":1'));
-      assert.ok(body.messages.at(-1).content.includes('"sampleRows":[{"id":1}]'));
+      assert.ok(
+        body.messages.at(-1).content.includes('"sampleRows":[{"id":1}]'),
+      );
       assert.match(body.messages[0].content, /human-readable answer/);
       assert.match(body.messages[0].content, /tabulated results/);
       assert.match(body.messages[0].content, /sampled or truncated/);
@@ -533,15 +537,29 @@ test("follow-up context reaches both agent and SQL generator, with a grounded te
       "openai",
       "test-key",
       "test",
-      { history, summarizeResults: true, onAgentToken: (token) => agentTokens.push(token) },
+      {
+        history,
+        summarizeResults: true,
+        onProgress: (stage) => progress.push(stage),
+        onAgentToken: (token) => agentTokens.push(token),
+      },
     );
     assert.equal(calls, 4);
+    assert.deepEqual(progress, [
+      "understanding",
+      "generating_sql",
+      "fetching_data",
+      "summarizing",
+    ]);
     assert.equal(result.queryResult!.rowCount, 1);
     assert.equal(
       result.explanation,
       "The query returned one matching customer.",
     );
-    assert.equal(agentTokens.join(""), "\n\nThe query returned one matching customer.");
+    assert.equal(
+      agentTokens.join(""),
+      "\n\nThe query returned one matching customer.",
+    );
   } finally {
     globalThis.fetch = originalFetch;
   }

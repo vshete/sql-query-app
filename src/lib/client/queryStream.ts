@@ -1,6 +1,8 @@
 import type { QueryAgentResult, QueryChatMessage } from "../../types/query.types";
 import {
   AGENT_TIMEOUT_MS,
+  isQueryProgress,
+  type QueryProgress,
   MAX_STREAM_TEXT_LENGTH,
 } from "../../types/queryProtocol";
 import { isRecord, parseAgentResult } from "./clientValidation";
@@ -12,13 +14,14 @@ const STREAM_TIMEOUT_MS = AGENT_TIMEOUT_MS + 5_000;
 interface StreamOptions {
   history?: QueryChatMessage[];
   signal: AbortSignal;
+  onProgress?: (stage: QueryProgress) => void;
   onUpdate: (sql: string, answer: string) => void;
 }
 
 /** Own the socket, timer and paint callback together, including connecting/unmount cleanup. */
 export function streamQuery(
   request: string,
-  { signal, onUpdate, history }: StreamOptions,
+  { signal, onUpdate, onProgress, history }: StreamOptions,
 ): Promise<QueryAgentResult> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
@@ -86,6 +89,11 @@ export function streamQuery(
         const message: unknown = JSON.parse(event.data);
         if (!isRecord(message)) throw new Error("Expected a stream event.");
         switch (message.type) {
+          case "progress":
+            if (!isQueryProgress(message.stage))
+              throw new Error("Invalid progress stage.");
+            onProgress?.(message.stage);
+            break;
           case "sql_start":
             break;
           case "token":

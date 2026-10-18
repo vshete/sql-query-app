@@ -362,6 +362,9 @@
   color: var(--text-muted);
   font-size: 12px;
 }
+.generationStatus > button {
+  margin-left: auto;
+}
 .generationSpinner {
   width: 16px;
   height: 16px;

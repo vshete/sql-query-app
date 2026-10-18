@@ -1,5 +1,6 @@
 "use client";
 
+import { QUERY_PROGRESS, type QueryProgress } from "../types/queryProtocol";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MAX_REQUEST_LENGTH, streamQuery } from "../lib/client/queryStream";
 import { appendQueryHistory } from "../lib/shared/queryConversation";
@@ -17,6 +18,7 @@ interface GenerationState extends QueryTurn {
   previousTurns: QueryTurn[];
   hasStarted: boolean;
   isGenerating: boolean;
+  progress: QueryProgress;
 }
 
 const idle: GenerationState = {
@@ -24,6 +26,7 @@ const idle: GenerationState = {
   previousTurns: [],
   hasStarted: false,
   isGenerating: false,
+  progress: QUERY_PROGRESS.UNDERSTANDING,
   streamedSQL: "",
   agentText: "",
   error: null,
@@ -74,6 +77,10 @@ export function useAIQueryGeneration() {
       const result = await streamQuery(request, {
         history: history.current,
         signal: controller.signal,
+        onProgress: (progress) => {
+          if (active.current === controller)
+            setState((previous) => ({ ...previous, progress }));
+        },
         onUpdate: (streamedSQL, agentText) => {
           if (active.current === controller)
             setState((previous) => ({ ...previous, streamedSQL, agentText }));
@@ -101,6 +108,18 @@ export function useAIQueryGeneration() {
     }
   }, []);
 
+  const cancel = useCallback(() => {
+    const controller = active.current;
+    if (!controller) return;
+    active.current = null;
+    controller.abort();
+    setState((previous) => ({
+      ...previous,
+      isGenerating: false,
+      error: "Query cancelled.",
+    }));
+  }, []);
+
   const reset = useCallback(() => {
     const controller = active.current;
     active.current = null;
@@ -109,5 +128,5 @@ export function useAIQueryGeneration() {
     setState(idle);
   }, []);
 
-  return { ...state, generateQuery, reset };
+  return { ...state, generateQuery, cancel, reset };
 }

@@ -1,3 +1,4 @@
+import { QUERY_PROGRESS } from "../../../types/queryProtocol";
 import { HumanMessage } from "@langchain/core/messages";
 import type { QueryRequestContext } from "./queryAgent.types";
 import { appendQueryHistory } from "../../shared/queryConversation";
@@ -15,6 +16,7 @@ export async function summarizeResults(
   }
   context.resultSummary ??= (async () => {
     const { model, options, prompts, queryResult } = context;
+    options.onProgress?.(QUERY_PROGRESS.SUMMARIZING);
 
     const answerMessages = appendQueryHistory([], request, {
       generatedSQL: context.generatedSQL,

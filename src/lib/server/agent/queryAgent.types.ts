@@ -1,3 +1,4 @@
+import type { QueryProgress } from "../../../types/queryProtocol";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { Sequelize } from "sequelize";
 import type {
@@ -11,6 +12,7 @@ export interface QueryAgentOptions {
   summarizeResults?: boolean;
   onToken?: (token: string) => void;
   onAgentToken?: (token: string) => void;
+  onProgress?: (stage: QueryProgress) => void;
   onSqlStart?: () => void;
   signal?: AbortSignal;
   database?: Sequelize;

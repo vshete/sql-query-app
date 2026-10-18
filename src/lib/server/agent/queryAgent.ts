@@ -1,3 +1,4 @@
+import { QUERY_PROGRESS } from "../../../types/queryProtocol";
 import { createAgent } from "langchain";
 import type { QueryAgentResult } from "../../../types/query.types";
 import { isMockModelEnabled } from "./mocks/mockMode";
@@ -25,6 +26,7 @@ export async function runQueryAgent(
   options: QueryAgentOptions = {},
 ): Promise<QueryAgentResult> {
   options = { ...options, history: parseQueryHistory(options.history) };
+  options.onProgress?.(QUERY_PROGRESS.UNDERSTANDING);
   const mockModel = isMockModelEnabled();
   const model = createQueryModel({
     provider,
