@@ -77,7 +77,10 @@ test("boot retries a failed connection and shares the successful initialization"
   });
   mock.method(database, "query", async () => []);
   try {
-    await Promise.all([initializeDatabase(database), initializeDatabase(database)]);
+    await Promise.all([
+      initializeDatabase(database),
+      initializeDatabase(database),
+    ]);
     await initializeDatabase(database);
     assert.equal(attempts, 4);
   } finally {
@@ -86,16 +89,22 @@ test("boot retries a failed connection and shares the successful initialization"
 });
 
 test("boot stops after three retries and permits a later initialization", async () => {
-  const database = new Sequelize("postgresql://server:private@offline.test/db", {
-    logging: false,
-  });
+  const database = new Sequelize(
+    "postgresql://server:private@offline.test/db",
+    {
+      logging: false,
+    },
+  );
   const offline = new Error("offline");
   const authenticate = mock.method(database, "authenticate", async () => {
     throw offline;
   });
   const query = mock.method(database, "query", async () => []);
   try {
-    await assert.rejects(initializeDatabase(database), (error) => error === offline);
+    await assert.rejects(
+      initializeDatabase(database),
+      (error) => error === offline,
+    );
     assert.equal(authenticate.mock.callCount(), 4);
     assert.equal(query.mock.callCount(), 0);
     authenticate.mock.mockImplementation(async () => {});

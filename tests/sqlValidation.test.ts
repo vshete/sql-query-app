@@ -1,5 +1,5 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
+import { test } from "node:test";
 import { cleanAndValidateSql } from "../src/lib/server/database/sqlValidation";
 
 test("validates joins, quoted identifiers, CTEs and nested queries", () => {
@@ -44,7 +44,8 @@ test("checks tables against an explicitly supplied schema allowlist", () => {
     "SELECT * FROM secrets",
     "SELECT * FROM orders, secrets",
     "SELECT * FROM secrets WHERE EXISTS (WITH secrets AS (SELECT * FROM orders) SELECT * FROM secrets)",
-  ]) assert.throws(() => cleanAndValidateSql(sql, allowedTables), sql);
+  ])
+    assert.throws(() => cleanAndValidateSql(sql, allowedTables), sql);
 });
 
 test("rejects invalid SQL, multiple statements and writes", () => {

@@ -1,17 +1,17 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
+import { test } from "node:test";
 import {
   appendQueryHistory,
   parseQueryHistory,
 } from "../src/lib/shared/queryConversation";
-import {
-  MAX_HISTORY_LENGTH,
-  MAX_HISTORY_MESSAGES,
-} from "../src/types/queryProtocol";
 import type {
   QueryAgentResult,
   QueryChatMessage,
 } from "../src/types/query.types";
+import {
+  MAX_HISTORY_LENGTH,
+  MAX_HISTORY_MESSAGES,
+} from "../src/types/queryProtocol";
 
 const result: QueryAgentResult = {
   generatedSQL: "SELECT * FROM customers;",

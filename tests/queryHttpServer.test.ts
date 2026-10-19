@@ -1,8 +1,8 @@
+import next from "next";
 import assert from "node:assert/strict";
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { Duplex } from "node:stream";
 import { test } from "node:test";
-import next from "next";
 import { createQueryHttpServer } from "../src/lib/server/transport/queryHttpServer";
 
 test("Next's lazy upgrade setup cannot close query sockets and still receives HMR", async () => {
@@ -20,7 +20,10 @@ test("Next's lazy upgrade setup cannot close query sockets and still receives HM
       },
     },
   });
-  const server = createQueryHttpServer(app.getRequestHandler(), nextUpgradeServer);
+  const server = createQueryHttpServer(
+    app.getRequestHandler(),
+    nextUpgradeServer,
+  );
   const writes: string[] = [];
   const socket = new Duplex({
     read() {},

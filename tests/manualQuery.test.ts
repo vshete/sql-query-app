@@ -1,9 +1,6 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
-import {
-  getManualQueryCsv,
-  getManualQueryPage,
-} from "./fixtures/manualQuery";
+import { test } from "node:test";
+import { getManualQueryCsv, getManualQueryPage } from "./fixtures/manualQuery";
 
 test("manual pagination reconstructs the download without skipped or repeated rows", () => {
   const first = getManualQueryPage(1, 10)!;

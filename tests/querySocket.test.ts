@@ -10,14 +10,14 @@ test("the deployed route rejects missing/cross-site origins and ordinary HTTP", 
     const response = await GET(
       new Request("https://query.example/api/agent/stream", {
         headers: { host: "query.example", ...(origin ? { origin } : {}) },
-      })
+      }),
     );
     assert.equal(response.status, 403);
   }
   const response = await GET(
     new Request("https://query.example/api/agent/stream", {
       headers: { host: "query.example", origin: "https://query.example" },
-    })
+    }),
   );
   assert.equal(response.status, 426);
 });

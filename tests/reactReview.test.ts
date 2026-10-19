@@ -5,13 +5,13 @@ import {
   parseQueryResult,
   parseSchemaInfo,
 } from "../src/lib/client/clientValidation";
+import { streamQuery } from "../src/lib/client/queryStream";
+import { isSameHostOrigin } from "../src/lib/server/transport/requestOrigin";
 import {
   compareQueryValues,
   formatQueryValue,
   queryResultCsv,
 } from "../src/lib/shared/queryResults";
-import { streamQuery } from "../src/lib/client/queryStream";
-import { isSameHostOrigin } from "../src/lib/server/transport/requestOrigin";
 import type { QueryAgentResult } from "../src/types/query.types";
 import {
   MAX_REQUEST_LENGTH,

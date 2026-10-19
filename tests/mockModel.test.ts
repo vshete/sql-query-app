@@ -1,5 +1,5 @@
-import { test, mock } from "node:test";
 import assert from "node:assert/strict";
+import { mock, test } from "node:test";
 import { Sequelize, type QueryOptions } from "sequelize";
 import { mockDatabaseClient, transactionQuery } from "./databaseMock";
 mock.method(
@@ -25,13 +25,16 @@ mock.method(
   },
 );
 
+import { getAgentConfig } from "../src/lib/server/agent/agentConfig";
 import {
   configureMockModelMode,
   isMockModelEnabled,
 } from "../src/lib/server/agent/mocks/mockMode";
+import {
+  MOCK_SUMMARY,
+  MockQueryChatModel,
+} from "../src/lib/server/agent/mocks/mockQueryChatModel";
 import { MOCK_SQL } from "../src/lib/server/agent/modelFactory";
-import { MOCK_SUMMARY, MockQueryChatModel } from "../src/lib/server/agent/mocks/mockQueryChatModel";
-import { getAgentConfig } from "../src/lib/server/agent/agentConfig";
 import { runQueryAgent } from "../src/lib/server/agent/queryAgent";
 
 function saveEnvironment() {
@@ -134,7 +137,10 @@ test("mock requests stream identical SQL without provider calls and execute thro
         if (request === "List customers") {
           assert.equal(result.explanation, MOCK_SUMMARY);
           assert.equal(agentTokens.join(""), `\n\n${MOCK_SUMMARY}`);
-          assert.ok(agentTokens.length > 2, "summary arrives in multiple chunks");
+          assert.ok(
+            agentTokens.length > 2,
+            "summary arrives in multiple chunks",
+          );
         } else {
           assert.equal(agentTokens.join(""), "");
           assert.match(result.explanation, /Generated using a mock model/);
