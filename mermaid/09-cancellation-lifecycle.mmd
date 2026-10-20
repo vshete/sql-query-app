@@ -1,0 +1,23 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+flowchart TB
+    accTitle: Interruptions — cancel, fail, or keep a useful result
+    accDescr: Follow the numbered connectors. Subnumbers identify branches or smaller steps. Optional actions and supporting relationships are labeled separately. Cancellation, disconnection, or a timeout stops updates and signals AI/tool work to stop, allowing a new question. Active PostgreSQL work may continue until it finishes or reaches a database timeout. A required-step failure is an unsuccessful turn, but a summary-only failure preserves the successful table with a warning.
+    %% Companion guides: docs/frontend.md, docs/query-agent.md, docs/transport-api.md
+
+    CAUSE{"What interrupted the answer?"}:::work
+    STOP["Stop this turn's updates: Signal AI and tools to stop"]:::work
+    READY["Ready for another question"]:::view
+    SQL["Active SQL may continue until it finishes or times out"]:::note
+    ERROR["Show a clear error: This turn did not complete"]:::note
+    KEEP["Keep the successful table: Show an explanation warning"]:::view
+
+    CAUSE -->|1.a. Cancel, disconnect, or timeout| STOP
+    STOP -->|2| READY
+    CAUSE -->|1.b. Query or AI failure| ERROR
+    CAUSE -->|1.c. Only the explanation fails| KEEP
+    STOP -.->|Database caveat| SQL
+
+    classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;

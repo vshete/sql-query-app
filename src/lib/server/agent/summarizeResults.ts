@@ -1,10 +1,10 @@
 import { QUERY_PROGRESS } from "../../../types/queryProtocol";
 import { HumanMessage } from "@langchain/core/messages";
 import type { QueryRequestContext } from "./queryAgent.types";
-import { appendQueryHistory } from "../../shared/queryConversation";
+import { buildQueryResultContext } from "../../shared/queryConversation";
 import { extractText, toHistoryMessages } from "./queryMessages";
 
-/** Summarize a bounded sample of executed rows once, streaming answer text separately from SQL. */
+/** Summarize all loaded rows once, streaming answer text separately from SQL. */
 export async function summarizeResults(
   context: QueryRequestContext,
   request: string,
@@ -18,7 +18,7 @@ export async function summarizeResults(
     const { model, options, prompts, queryResult } = context;
     options.onProgress?.(QUERY_PROGRESS.SUMMARIZING);
 
-    const answerMessages = appendQueryHistory([], request, {
+    const executedResult = buildQueryResultContext({
       generatedSQL: context.generatedSQL,
       explanation: "",
       requiredTables: context.requiredTables,
@@ -33,7 +33,7 @@ export async function summarizeResults(
         new HumanMessage(
           JSON.stringify({
             request,
-            executedResult: JSON.parse(answerMessages.at(-1)!.content),
+            executedResult,
           }),
         ),
       ],

@@ -497,7 +497,7 @@ test("follow-up context reaches both agent and SQL generator, with a grounded te
       role: "assistant" as const,
       content: JSON.stringify({
         sql: "SELECT * FROM customers;",
-        sampleRows: [{ id: 1 }],
+        rows: [{ id: 1 }],
       }),
     },
   ];
@@ -516,11 +516,12 @@ test("follow-up context reaches both agent and SQL generator, with a grounded te
     if (calls === 4) {
       assert.ok(body.messages.at(-1).content.includes('"rowCount":1'));
       assert.ok(
-        body.messages.at(-1).content.includes('"sampleRows":[{"id":1}]'),
+        body.messages.at(-1).content.includes('"rows":[{"id":1}]'),
       );
       assert.match(body.messages[0].content, /human-readable answer/);
       assert.match(body.messages[0].content, /tabulated results/);
-      assert.match(body.messages[0].content, /sampled or truncated/);
+      assert.match(body.messages[0].content, /every loaded row/);
+      assert.match(body.messages[0].content, /truncated is true/);
       return streamResponse({
         content: "The query returned one matching customer.",
       });
@@ -562,6 +563,55 @@ test("follow-up context reaches both agent and SQL generator, with a grounded te
     );
   } finally {
     globalThis.fetch = originalFetch;
+  }
+});
+
+test("the summary model receives all 1,000 loaded rows even beyond the history budget", async () => {
+  const rows = Array.from({ length: 1000 }, (_, id) => ({
+    id,
+    name: `Customer ${id}: ${"x".repeat(150)}`,
+  }));
+  const connect = mockDatabaseClient(async () => ({
+    query: async (sql: string) =>
+      sql.startsWith("FETCH")
+        ? { rows, fields: [{ name: "id" }, { name: "name" }] }
+        : { rows: [], fields: [] },
+    release: () => {},
+  }));
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async (_input, init) => {
+    calls++;
+    const body = JSON.parse(String(init?.body));
+    if (calls === 4) {
+      const payload = JSON.parse(body.messages.at(-1).content);
+      assert.deepEqual(payload.executedResult.rows, rows);
+      assert.equal(payload.executedResult.rowCount, 1000);
+      assert.equal(payload.executedResult.truncated, false);
+      assert.equal("sampleRows" in payload.executedResult, false);
+      return streamResponse({ content: "The query returned 1,000 customers." });
+    }
+    return streamResponse(
+      calls === 2
+        ? { content: "SELECT * FROM customers;" }
+        : toolDelta([calls === 1 ? "construct_sql" : "execute_query"]),
+    );
+  };
+  try {
+    const result = await runQueryAgent(
+      "List customers",
+      "openai",
+      "test-key",
+      "test",
+      { summarizeResults: true },
+    );
+    assert.equal(calls, 4);
+    assert.deepEqual(result.queryResult!.rows, rows);
+    assert.equal(result.explanation, "The query returned 1,000 customers.");
+    assert.deepEqual(result.warnings, []);
+  } finally {
+    globalThis.fetch = originalFetch;
+    connect.mock.restore();
   }
 });
 

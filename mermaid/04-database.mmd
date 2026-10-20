@@ -1,0 +1,26 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+flowchart TB
+    accTitle: Database — controlled reads and understandable results
+    accDescr: Follow the numbered connectors. Subnumbers identify branches or smaller steps. Optional actions and supporting relationships are labeled separately. SQL must satisfy a single read-only-query policy before database execution. The app runs queries with statement and lock timeouts, returns at most 1000 rows, flags additional matches, and preserves result values and column names. The table list is saved separately and guides AI-generated queries.
+    %% Companion guide: docs/database.md
+
+    SQL["Receive a SQL query"]:::work
+    VALID{"Is this an allowed read-only query?"}:::work
+    RUN["Read the database: Slow or blocked work times out"]:::data
+    LIMIT["Load at most 1,000 rows: Warn if more matches exist"]:::data
+    RESULT["Return columns and values: Empty results keep column names"]:::view
+    ERROR["Reject or report the error: Roll back failed database work"]:::note
+    SCHEMA["Saved table and column list: Also used to check AI-generated SQL"]:::data
+
+    SQL -->|1| VALID
+    VALID -->|2.a. Yes| RUN
+    RUN -->|3| LIMIT
+    LIMIT -->|4| RESULT
+    VALID -->|2.b. No| ERROR
+    RUN -.->|Query failure| ERROR
+    SCHEMA -.->|Supporting information| VALID
+
+    classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;

@@ -148,7 +148,7 @@ for (const request of [
         role: "assistant" as const,
         content: JSON.stringify({
           sql: "SELECT * FROM customers LIMIT 5;",
-          sampleOnly: true,
+          rows: [],
         }),
       },
     ];

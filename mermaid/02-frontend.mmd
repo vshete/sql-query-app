@@ -1,0 +1,27 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+flowchart TB
+    accTitle: Frontend — what the reader sees and does
+    accDescr: Follow the numbered connectors. Subnumbers identify branches or smaller steps. Optional actions and supporting relationships are labeled separately. The workspace has a schema explorer and a question-and-answer area. Users browse table names, ask questions, watch progress, optionally cancel, then inspect the SQL, answer, or error. A successful table can be explored and downloaded without rerunning the query.
+    %% Companion guide: docs/frontend.md
+
+    WORKSPACE["Your workspace"]:::view
+    SCHEMA["Schema explorer: Browse tables and columns"]:::view
+    FILTER["Search or refresh the table list"]:::view
+    QUESTION["Question area: Ask or follow up"]:::view
+    WAIT["While the app works: Watch progress or cancel"]:::view
+    RESPONSE["Response area: SQL preview, answer, or clear error"]:::view
+    TABLE["Result table: Sort, page, and resize columns"]:::view
+    EXPORT["Download CSV: Export the loaded rows"]:::data
+
+    WORKSPACE -->|1.a. Ask a question| QUESTION
+    QUESTION -->|2.a| WAIT
+    WAIT -->|3| RESPONSE
+    RESPONSE -->|4. Rows returned| TABLE
+    TABLE -->|5| EXPORT
+    WORKSPACE -->|1.b. Optional browsing| SCHEMA
+    SCHEMA -->|2.b| FILTER
+
+    classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;

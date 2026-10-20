@@ -1,0 +1,27 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+flowchart TB
+    accTitle: Running the app — prepare, start, and verify the journey
+    accDescr: Follow the numbered connectors. Subnumbers identify branches or smaller steps. Optional actions and supporting relationships are labeled separately. Configure the database and AI credentials, start the default server after its database check, and test the real user journey. Automated tests support this verification but do not replace it. Deployment must also verify the live connection through the actual host. Mock AI avoids provider calls while leaving database work live.
+    %% Companion guide: docs/testing-operations.md
+
+    SETUP["Prepare the environment: Database and AI settings"]:::work
+    START["Start the default server: Check that the database is ready"]:::work
+    RUN["App accepts questions"]:::view
+    VERIFY["Check the whole user journey: Ask, follow up, cancel, and export"]:::view
+    TESTS["Run automated checks: Requests, SQL, and results"]:::work
+    DEPLOY["After deployment: Check the live connection on the real host"]:::work
+    MOCK["Optional mock AI: Database queries still run for real"]:::note
+    DEBUG["If something fails: Check browser requests and server logs"]:::note
+
+    SETUP -->|1| START
+    START -->|2| RUN
+    RUN -->|3| VERIFY
+    TESTS -->|Supporting checks| VERIFY
+    DEPLOY -->|Supporting checks| VERIFY
+    MOCK -.->|Optional| START
+    VERIFY -.->|If needed| DEBUG
+
+    classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;

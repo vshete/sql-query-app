@@ -1,0 +1,27 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+flowchart TB
+    accTitle: Communication — live answers and ordinary API requests
+    accDescr: Follow the numbered connectors. Subnumbers identify branches or smaller steps. Optional actions and supporting relationships are labeled separately. The browser uses a live WebSocket connection for chat and HTTP APIs for schema information and other supported requests. The app checks requests and sends progress, SQL, assistant text, and a final response. Invalid requests, lost connections, or timeouts are surfaced as errors. Both hosting adapters share the live-request behavior.
+    %% Companion guide: docs/transport-api.md
+
+    BROWSER["Browser or API client"]:::view
+    LIVE["Live chat connection: WebSocket: one question per connection"]:::work
+    HTTP["HTTP APIs: Schema, AI, SQL, and CSV requests"]:::work
+    SERVER["App server: Check and handle the request"]:::work
+    STREAM["Live updates: Progress, SQL preview, and answer text"]:::view
+    FINAL["Final response: Answer, data, CSV file, or error"]:::view
+    ERROR["If invalid, disconnected, or timed out: Show a failure instead of a completed turn"]:::note
+
+    BROWSER -->|1.a. Live chat| LIVE
+    LIVE -->|2.a| SERVER
+    BROWSER -->|1.b. HTTP request| HTTP
+    HTTP -->|2.b| SERVER
+    SERVER -->|3| FINAL
+    SERVER -->|While working; live chat only| STREAM
+    LIVE -.->|Connection fails| ERROR
+    SERVER -.->|Request fails| ERROR
+
+    classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;

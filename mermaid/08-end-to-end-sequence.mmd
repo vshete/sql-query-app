@@ -1,0 +1,22 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","actorBkg":"#eff6ff","actorBorder":"#2563eb","actorTextColor":"#172033","signalColor":"#475569","signalTextColor":"#172033","noteBkgColor":"#fffbeb","noteBorderColor":"#d97706","noteTextColor":"#78350f"},"sequence":{"mirrorActors":false,"wrap":true,"useMaxWidth":false,"width":170,"actorMargin":45,"messageMargin":30,"messageFontSize":18,"noteFontSize":17}}}%%
+sequenceDiagram
+    accTitle: One data question — the journey in time order
+    accDescr: A typical successful data question moves between the browser, app, AI provider, and database. SQL is drafted and checked before read-only execution. The app can explain all loaded rows (up to 1,000) before returning the final answer and table. Direct answers and failures are covered in the assistant and cancellation diagrams.
+    autonumber
+    actor B as Your browser
+    participant APP as App server
+    participant AI as AI provider
+    participant DB as Database
+
+    B->>APP: Ask a question with recent context
+    APP->>AI: Use the question and table list
+    AI-->>APP: Draft a SQL query
+    APP-->>B: Show progress and SQL preview
+    APP->>APP: Check that the query is allowed
+    APP->>DB: Run the checked read-only query
+    DB-->>APP: Return up to 1,000 rows
+    opt Explain the results
+        APP->>AI: Explain all loaded rows (up to 1,000)
+        AI-->>APP: Result explanation
+    end
+    APP-->>B: Final answer, table, and any warnings

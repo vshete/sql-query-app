@@ -1,0 +1,31 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+flowchart TB
+    accTitle: The whole app — ask, process, and explore
+    accDescr: Follow the numbered connectors. Subnumbers identify branches or smaller steps. Optional actions and supporting relationships are labeled separately. The browser sends questions and recent context to the app server. The server coordinates an AI provider and checked read-only database access. Progress and SQL appear while work continues, followed by an answer, table, or clear error. Schema browsing, cancellation, follow-ups, and local table actions complete the user journey.
+    %% Companion guide: docs/architecture.md
+
+    BROWSER["Your workspace: Ask questions or follow up"]:::view
+    SERVER["App server: Check requests and coordinate AI"]:::work
+    QUERY["Database access: Check and run read-only SQL"]:::work
+    RESPONSE["Back in your workspace: Answer, table, warnings, or error"]:::view
+    EXPLORE["Explore the loaded rows: Sort, page, resize, or export CSV"]:::view
+    MODEL["AI provider: Writes SQL and explains results"]:::work
+    DB[("PostgreSQL: Your connected database")]:::data
+    SCHEMA["Browse tables and columns: Load or refresh the saved list"]:::data
+    LIVE["While waiting: See progress and SQL preview"]:::view
+    CANCEL["Cancel the current turn or start a new chat when idle"]:::note
+
+    BROWSER -->|1. Submit question| SERVER
+    SERVER -->|2. Query data| QUERY
+    QUERY -->|3. Show response| RESPONSE
+    RESPONSE -->|4. Explore results| EXPLORE
+    SERVER <-->|AI requests and replies| MODEL
+    QUERY <-->|SQL and matching rows| DB
+    BROWSER -.->|Optional| SCHEMA
+    SERVER -.->|While working| LIVE
+    BROWSER -.->|Optional| CANCEL
+
+    classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;

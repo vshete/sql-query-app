@@ -1,0 +1,23 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+flowchart TB
+    accTitle: Architecture — three places with clear responsibilities
+    accDescr: The browser owns the screen and current conversation. The app server owns requests, AI tools, and SQL checks. PostgreSQL stores the queried data, while a separate AI provider receives model requests. Startup checks and saved schema information support these core responsibilities.
+    %% Companion guide: docs/architecture.md
+
+    BROWSER["Browser: Screen and current conversation"]:::view
+    APP["App server: Requests, AI tools, and SQL checks"]:::work
+    DB[("PostgreSQL: Stores the data you query")]:::data
+    AI["AI provider: Generates SQL and explanations"]:::work
+    CACHE["Saved table and column list: Avoid repeated database discovery"]:::data
+    START["Default server startup: Check the database before serving"]:::note
+
+    BROWSER <-->|Questions and responses| APP
+    APP <-->|Checked queries and rows| DB
+    APP <-->|Model requests and replies| AI
+    APP -.-> CACHE
+    START -.-> APP
+
+    classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;

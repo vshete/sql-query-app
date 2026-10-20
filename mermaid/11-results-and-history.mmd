@@ -1,0 +1,27 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+flowchart TB
+    accTitle: One result — different uses on screen and in follow-ups
+    accDescr: A successful response supplies the screen with all loaded rows, while future AI questions receive recent context with all loaded rows per retained turn. The history budget removes whole turns, without sampling rows. Browser table actions and CSV use the loaded snapshot. A separate CSV API reruns SQL and may observe newer data. New chat or reload clears local conversation state.
+    %% Companion guides: docs/frontend.md, docs/database.md, docs/query-agent.md
+
+    RESULT["Successful response"]:::work
+    SCREEN["On screen: Keep all loaded rows"]:::view
+    TABLE["Sort, page, and resize: Use only the loaded rows"]:::view
+    CSV["Download CSV: Same rows, original database order"]:::data
+    HISTORY["For follow-up questions: All loaded rows per retained turn"]:::work
+    BUDGET["History budget: Drop whole turns above 40 messages or 120,000 characters"]:::note
+    NEXT["Next question: Start a fresh request"]:::view
+    RESET["New chat or reload: Clears local conversation state"]:::note
+    API["Separate CSV API: Reruns SQL and may see newer data"]:::note
+
+    RESULT --> SCREEN --> TABLE --> CSV
+    RESULT --> HISTORY --> NEXT
+    SCREEN -.-> RESET
+    HISTORY -.-> RESET
+    BUDGET -.-> HISTORY
+    CSV -.->|Different download option| API
+
+    classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;

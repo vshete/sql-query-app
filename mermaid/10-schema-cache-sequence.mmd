@@ -1,0 +1,20 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","actorBkg":"#eff6ff","actorBorder":"#2563eb","actorTextColor":"#172033","signalColor":"#475569","signalTextColor":"#172033","noteBkgColor":"#fffbeb","noteBorderColor":"#d97706","noteTextColor":"#78350f"},"sequence":{"mirrorActors":false,"wrap":true,"useMaxWidth":false,"width":170,"actorMargin":45,"messageMargin":30,"messageFontSize":18,"noteFontSize":17}}}%%
+sequenceDiagram
+    accTitle: The table list — load once, reuse, and refresh
+    accDescr: The browser and server save table lists to avoid repeated discovery. This sequence shows loading when saved information is needed, followed by explicit refresh. Database discovery is skipped when the server already has a saved copy. Refresh replaces saved copies only on success and does not update other tabs or servers.
+    autonumber
+    participant B as Browser
+    participant APP as App server
+    participant DB as Database
+
+    B->>APP: Load the table and column list
+    APP->>DB: Read the list if no server copy is saved
+    DB-->>APP: Accessible tables and columns
+    APP-->>B: Save and show the list
+    Note over B,APP: Normal browsing reuses saved copies.
+
+    B->>APP: User clicks Refresh
+    APP->>DB: Request current tables and columns
+    DB-->>APP: Updated table list
+    APP-->>B: Replace saved copies after success
+    Note over B,DB: If refresh fails, keep the last good list. Other tabs and servers refresh separately.

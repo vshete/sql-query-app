@@ -7,29 +7,28 @@ import {
   MAX_HISTORY_MESSAGES,
 } from "../../types/queryProtocol";
 
+/** Preserve every loaded row when supplying an executed result to the model. */
+export function buildQueryResultContext(result: QueryAgentResult) {
+  return {
+    explanation: result.explanation,
+    sql: result.generatedSQL,
+    columns: result.queryResult?.columns,
+    rowCount: result.queryResult?.rowCount,
+    truncated: result.queryResult?.truncated,
+    rows: result.queryResult?.rows ?? [],
+  };
+}
+
 /** Keep complete, recent question/answer pairs within the model context budget. */
 export function appendQueryHistory(
   history: QueryChatMessage[],
   request: string,
   result: QueryAgentResult,
 ): QueryChatMessage[] {
-  const summary = {
-    explanation: result.explanation,
-    sql: result.generatedSQL,
-    columns: result.queryResult?.columns,
-    rowCount: result.queryResult?.rowCount,
-    truncated: result.queryResult?.truncated,
-    sampleRows: result.queryResult?.rows.slice(0, 20) ?? [],
-    sampleOnly: true,
-  };
-
-  // Very wide rows must not crowd SQL and conversation out of context.
-  while (JSON.stringify(summary).length > 20_000 && summary.sampleRows.length)
-    summary.sampleRows.pop();
   const next: QueryChatMessage[] = [
     ...history,
     { role: "user", content: request },
-    { role: "assistant", content: JSON.stringify(summary) },
+    { role: "assistant", content: JSON.stringify(buildQueryResultContext(result)) },
   ];
   while (
     next.length > MAX_HISTORY_MESSAGES ||

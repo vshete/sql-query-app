@@ -1,0 +1,34 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+flowchart TB
+    accTitle: AI query assistant — decide, query, and explain
+    accDescr: Follow the numbered connectors. Subnumbers identify branches or smaller steps. Optional actions and supporting relationships are labeled separately. The assistant can answer directly or use the connected database. For a data question it drafts SQL from the question and table list, checks the query, executes exactly the checked SQL with read-only access, and optionally explains all loaded rows, up to 1,000. Query errors fail the turn, while an explanation-only failure can preserve the table.
+    %% Companion guide: docs/query-agent.md
+
+    QUESTION["Read the question and recent conversation"]:::work
+    NEEDS{"Does the answer need database data?"}:::work
+    DIRECT["Answer directly"]:::work
+    SQL["Draft SQL using the table and column list"]:::work
+    CHECK["Check that the query is allowed"]:::work
+    RUN["Run that exact query with read-only access"]:::data
+    SUMMARY["Optionally explain all loaded rows"]:::work
+    FINAL["Finish: Send the final answer with a table when available"]:::view
+    ERROR["If generation or querying fails: Return a clear error"]:::note
+    WARNING["If only the explanation fails: Keep the table with a warning"]:::note
+
+    QUESTION -->|1| NEEDS
+    NEEDS -->|2.a. No| DIRECT
+    DIRECT -->|3.a. Direct answer| FINAL
+    NEEDS -->|2.b. Yes| SQL
+    SQL -->|3.b| CHECK
+    CHECK -->|4| RUN
+    RUN -->|5| SUMMARY
+    SUMMARY -->|6| FINAL
+    RUN -.->|On error| ERROR
+    SQL -.->|On error| ERROR
+    CHECK -.->|On error| ERROR
+    SUMMARY -.->|Explanation fails| WARNING
+
+    classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;

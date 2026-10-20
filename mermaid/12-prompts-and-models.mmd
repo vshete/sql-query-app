@@ -1,0 +1,26 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+flowchart TB
+    accTitle: AI instructions and models — what guides the answer
+    accDescr: Follow the numbered connectors. Subnumbers identify branches or smaller steps. Optional actions and supporting relationships are labeled separately. The app combines the current question and recent context with server instructions and relevant table details or all loaded result rows. Real mode uses Gemini or OpenAI with server-held credentials. Development mock mode substitutes fixed model output while database queries remain live. The output is SQL or a result explanation.
+    %% Companion guide: docs/query-agent.md
+
+    QUESTION["Question and recent context"]:::view
+    INSTRUCTIONS["Server instructions: How to query and explain data"]:::work
+    DETAILS["Relevant data details: Table list or all loaded result rows"]:::data
+    MODE{"Which model mode?"}:::work
+    REAL["Gemini or OpenAI: Credentials stay on the server"]:::work
+    MOCK["Development mock: Fixed model output, live database"]:::note
+    OUTPUT["AI output: SQL draft or result explanation"]:::view
+
+    QUESTION -->|1| INSTRUCTIONS
+    INSTRUCTIONS -->|2| MODE
+    MODE -->|3.a. Real model| REAL
+    REAL -->|4.a| OUTPUT
+    MODE -->|3.b. Development only| MOCK
+    MOCK -->|4.b| OUTPUT
+    DETAILS -->|Supporting information| INSTRUCTIONS
+
+    classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;

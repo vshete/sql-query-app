@@ -1,0 +1,18 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+flowchart LR
+    accTitle: From your question to an answer
+    accDescr: Follow the numbered connectors. Subnumbers identify branches or smaller steps. Optional actions and supporting relationships are labeled separately. The usual journey for a question that needs database data: ask in plain language, prepare a database query, read matching data, and return an answer with a table. Other diagrams explain direct answers, errors, and optional features.
+
+    ASK(["You ask a question in plain language"]):::view
+    QUERY["AI prepares SQL (a database query)"]:::work
+    READ[("The app safely reads the database")]:::data
+    ANSWER["You receive an answer and a result table"]:::view
+
+    ASK -->|1| QUERY
+    QUERY -->|2| READ
+    READ -->|3| ANSWER
+
+    classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;

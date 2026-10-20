@@ -1,0 +1,23 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+flowchart TB
+    accTitle: Public demo — open access with read-only queries
+    accDescr: Anyone can try the demonstration without logging in. The app validates a single SELECT-based query and rejects writes, deletes, and schema changes. Accepted queries run in a read-only PostgreSQL transaction and return up to 1,000 rows. Dataset seeding is separate from this query path.
+    %% Companion guide: docs/security.md
+
+    VISITOR["Public demo: Try it without a login"]:::view
+    CHECK["Validate SQL: One SELECT-based query"]:::work
+    REJECT["Reject writes, deletes, and schema changes"]:::note
+    TRANSACTION["Execute with PostgreSQL READ ONLY"]:::work
+    DB[("Read demo data")]:::data
+    RESULT["Explore results: Up to 1,000 loaded rows"]:::view
+
+    VISITOR -->|1| CHECK
+    CHECK -->|2. Accepted query| TRANSACTION
+    CHECK -.->|Invalid SQL| REJECT
+    TRANSACTION -->|3| DB
+    DB -->|4| RESULT
+
+    classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;
