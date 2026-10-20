@@ -4,18 +4,20 @@ These guides describe the application implemented in this repository. Start with
 
 ## Find the right guide
 
-| I want to…                                         | Read                                                                | Diagram                                                                  |
-| -------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Install, configure, or seed the app                | [Project README](../README.md)                                      | [Setup and checks](../mermaid/rendered/07-testing-operations.svg)        |
-| Understand the system and its design choices       | [Architecture](./architecture.md)                                   | [System map](../mermaid/rendered/01-architecture.svg)                    |
-| Follow the app from interaction to response        | [Mermaid diagram library](../mermaid/README.md)                     | [Whole-app flow](../mermaid/rendered/00-overall.svg)                     |
-| Change components, hooks, or result rendering      | [Frontend and rendering](./frontend.md)                             | [Workspace](../mermaid/rendered/02-frontend.svg)                         |
-| Change model orchestration or MCP tools            | [Query agent and tools](./query-agent.md)                           | [Assistant flow](../mermaid/rendered/03-query-agent.svg)                 |
-| Understand SQL policy, caching, or exports         | [Database and result data](./database.md)                           | [Database reads](../mermaid/rendered/04-database.svg)                    |
-| Integrate with HTTP or WebSocket endpoints         | [Transport and APIs](./transport-api.md)                            | [Requests and responses](../mermaid/rendered/05-transport-api.svg)       |
-| Understand the public demo and read-only safeguards | [Public demo and read-only safeguards](./security.md)                         | [Read-only safeguards](../mermaid/rendered/06-security.svg)                   |
-| Run checks, deploy, or diagnose failures           | [Testing and operations](./testing-operations.md)                   | [Running the app](../mermaid/rendered/07-testing-operations.svg)         |
-| Edit the agent's prompt files                      | [Prompt authoring guide](../src/lib/server/agent/prompts/README.md) | [Instructions and models](../mermaid/rendered/12-prompts-and-models.svg) |
+| I want to…                                          | Read                                                                       | Diagram                                                                      |
+| --------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Install, configure, or seed the app                 | [Project README](../README.md)                                             | [Setup and checks](../mermaid/rendered/07-testing-operations.svg)            |
+| Understand the system and its design choices        | [Architecture](./architecture.md)                                          | [System map](../mermaid/rendered/01-architecture.svg)                        |
+| Follow the app from interaction to response         | [Mermaid diagram library](../mermaid/README.md)                            | [Whole-app flow](../mermaid/rendered/00-overall.svg)                         |
+| Change components, hooks, or result rendering       | [Frontend and rendering](./frontend.md)                                    | [Workspace](../mermaid/rendered/02-frontend.svg)                             |
+| Change model orchestration or MCP tools             | [Query agent and tools](./query-agent.md)                                  | [Assistant flow](../mermaid/rendered/03-query-agent.svg)                     |
+| Follow MCP tools across multiple chat turns         | [Illustrated MCP flow](./mcp-flow.md)                                      | [Multi-turn conversation](../mermaid/rendered/13-multi-turn-query-agent.svg) |
+| Trace MCP execution and understand its limits       | [Tool lifecycle and safeguards](./mcp-flow.md#follow-one-turn-through-mcp) | [MCP tool lifecycle](../mermaid/rendered/14-mcp-tool-lifecycle.svg)          |
+| Understand SQL policy, caching, or exports          | [Database and result data](./database.md)                                  | [Database reads](../mermaid/rendered/04-database.svg)                        |
+| Integrate with HTTP or WebSocket endpoints          | [Transport and APIs](./transport-api.md)                                   | [Requests and responses](../mermaid/rendered/05-transport-api.svg)           |
+| Understand the public demo and read-only safeguards | [Public demo and read-only safeguards](./security.md)                      | [Read-only safeguards](../mermaid/rendered/06-security.svg)                  |
+| Run checks, deploy, or diagnose failures            | [Testing and operations](./testing-operations.md)                          | [Running the app](../mermaid/rendered/07-testing-operations.svg)             |
+| Edit the agent's prompt files                       | [Prompt authoring guide](../src/lib/server/agent/prompts/README.md)        | [Instructions and models](../mermaid/rendered/12-prompts-and-models.svg)     |
 
 ## Visual overview
 
@@ -33,7 +35,7 @@ Open the image at full size, or follow [one question in time order](../mermaid/r
 - **Snapshot:** the rows loaded for a turn, capped at 1,000; sorting, paging, and browser CSV export use that snapshot.
 - **MCP:** Model Context Protocol. Here, its client and tool server communicate inside the same Node.js process.
 
-The [earlier React review](../REACT_CODE_REVIEW.md) is historical and may describe paths or behavior that have changed. These guides document current behavior; they are not a record of completed audit or deployment certification.
+These guides document current behavior; they are not a record of completed audit or deployment certification.
 
 ## Keep the docs accurate
 

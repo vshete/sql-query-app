@@ -16,19 +16,32 @@ You do not need to read every diagram. Use the topic views below when a particul
 
 ## Choose a topic
 
-| Question                                        | View the diagram                                                    | Copy the Mermaid text                     |
-| ----------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------- |
-| Where does each part of the app run?            | [Architecture](./rendered/01-architecture.svg)                      | [Source](./01-architecture.mmd)           |
-| What can I see and do in the workspace?         | [The screen](./rendered/02-frontend.svg)                            | [Source](./02-frontend.mmd)               |
-| How does AI decide, query, and explain?         | [AI assistant](./rendered/03-query-agent.svg)                       | [Source](./03-query-agent.mmd)            |
-| How is database access controlled?              | [Database](./rendered/04-database.svg)                              | [Source](./04-database.mmd)               |
-| How do requests and responses travel?           | [Communication](./rendered/05-transport-api.svg)                    | [Source](./05-transport-api.mmd)          |
-| How does the public demo prevent database writes? | [Read-only safeguards](./rendered/06-security.svg)                              | [Source](./06-security.mmd)               |
-| How do we start and check the app?              | [Running the app](./rendered/07-testing-operations.svg)             | [Source](./07-testing-operations.mmd)     |
-| What happens when work is interrupted?          | [Cancellation and errors](./rendered/09-cancellation-lifecycle.svg) | [Source](./09-cancellation-lifecycle.mmd) |
-| When is the table list reused or refreshed?     | [Saved table lists](./rendered/10-schema-cache-sequence.svg)        | [Source](./10-schema-cache-sequence.mmd)  |
-| How do results, follow-ups, and exports differ? | [Using a result](./rendered/11-results-and-history.svg)             | [Source](./11-results-and-history.mmd)    |
-| What guides the AI, and which model runs?       | [AI instructions and models](./rendered/12-prompts-and-models.svg)  | [Source](./12-prompts-and-models.mmd)     |
+| Question                                          | View the diagram                                                         | Copy the Mermaid text                      |
+| ------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------ |
+| Where does each part of the app run?              | [Architecture](./rendered/01-architecture.svg)                           | [Source](./01-architecture.mmd)            |
+| What can I see and do in the workspace?           | [The screen](./rendered/02-frontend.svg)                                 | [Source](./02-frontend.mmd)                |
+| How does AI decide, query, and explain?           | [AI assistant](./rendered/03-query-agent.svg)                            | [Source](./03-query-agent.mmd)             |
+| How is database access controlled?                | [Database](./rendered/04-database.svg)                                   | [Source](./04-database.mmd)                |
+| How do requests and responses travel?             | [Communication](./rendered/05-transport-api.svg)                         | [Source](./05-transport-api.mmd)           |
+| How does the public demo prevent database writes? | [Read-only safeguards](./rendered/06-security.svg)                       | [Source](./06-security.mmd)                |
+| How do we start and check the app?                | [Running the app](./rendered/07-testing-operations.svg)                  | [Source](./07-testing-operations.mmd)      |
+| What happens when work is interrupted?            | [Cancellation and errors](./rendered/09-cancellation-lifecycle.svg)      | [Source](./09-cancellation-lifecycle.mmd)  |
+| When is the table list reused or refreshed?       | [Saved table lists](./rendered/10-schema-cache-sequence.svg)             | [Source](./10-schema-cache-sequence.mmd)   |
+| How do results, follow-ups, and exports differ?   | [Using a result](./rendered/11-results-and-history.svg)                  | [Source](./11-results-and-history.mmd)     |
+| What guides the AI, and which model runs?         | [AI instructions and models](./rendered/12-prompts-and-models.svg)       | [Source](./12-prompts-and-models.mmd)      |
+| How does the agent handle several chat turns?     | [Multi-turn conversation](./rendered/13-multi-turn-query-agent.svg)      | [Source](./13-multi-turn-query-agent.mmd)  |
+| What happens inside the MCP tools?                | [MCP tool lifecycle](./rendered/14-mcp-tool-lifecycle.svg)               | [Source](./14-mcp-tool-lifecycle.mmd)      |
+| What is enforced, and what limits remain?         | [Agent safeguards and limits](./rendered/15-agent-safety-and-limits.svg) | [Source](./15-agent-safety-and-limits.mmd) |
+
+## Query agent and MCP: read these three together
+
+1. **[Multi-turn conversation](./rendered/13-multi-turn-query-agent.svg):** follow an initial data question and three possible follow-up paths: explain earlier results, ask for clarification, or fetch fresh data. Each turn starts with fresh server state; the browser supplies the conversation memory.
+2. **[MCP tool lifecycle](./rendered/14-mcp-tool-lifecycle.svg):** follow one database turn through tool selection, the in-memory MCP bridge, schema-aware generation, validation, exact-query execution, and an optional explanation. The sequence shows where the AI provider and PostgreSQL participate.
+3. **[Agent safeguards and limits](./rendered/15-agent-safety-and-limits.svg):** read four independent panels for request checks, SQL checks, resource/failure limits, and remaining answer/privacy boundaries. Purple and green describe enforced checks; amber describes limits or prompt guidance. Color is only a reading aid.
+
+These are vector SVG images: open them at full size and zoom to read the detailed sequences.
+
+The [illustrated MCP flow guide](../docs/mcp-flow.md) embeds all three diagrams and explains them with follow-up examples, tool responsibilities, safety checks, practical limits, and source links. See the [agent implementation guide](../docs/query-agent.md) for component contracts and provider configuration.
 
 ## A few useful terms
 

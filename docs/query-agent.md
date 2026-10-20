@@ -28,6 +28,8 @@ The agent implementation lives in `src/lib/server/agent/`:
 
 Open the image at full size. See [instructions and model selection](../mermaid/rendered/12-prompts-and-models.svg) for what guides the AI.
 
+The [illustrated MCP flow guide](./mcp-flow.md) explains the [multi-turn conversation](./mcp-flow.md#follow-a-conversation-across-turns), [MCP tool lifecycle](./mcp-flow.md#follow-one-turn-through-mcp), and [agent safeguards and limits](./mcp-flow.md#understand-the-safeguards-and-limits) with embedded diagrams, follow-up examples, and implementation links. It distinguishes enforced checks from prompt guidance; this page provides the component contracts and configuration details.
+
 `runQueryAgent` validates the supplied history again, emits the `understanding` stage, constructs the configured model, reads prompt files, and obtains the shared MCP client. It creates a fresh request context holding the model, prompts, options, emitted/generated SQL, required tables, model-call count, and memoized tool promises. A UUID registry key is the only context reference sent through MCP; it is deleted in `finally`.
 
 The LangChain agent is supplied two tools: `construct_sql` and `execute_query`. Its system prompt describes their order and coordination. Model stream events tagged `sql-generation` are not forwarded as assistant prose because SQL tokens use a separate callback. Other model text events are sent as `agent_token`. The middleware permits at most six model calls in the agent loop and ends the loop once the result exists. That budget excludes the SQL-generation and optional summary calls made inside tools. Tool failures are retained in the context and rethrown before another model iteration.
@@ -50,7 +52,7 @@ All input and output schemas live in `queryToolContracts.ts`, and are checked at
 | ------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `construct_sql`     | `{ request }` | Loads cached schema text, builds an allow-list of schema-qualified and public unqualified table names, streams model-generated SQL, validates it, records the exact SQL and referenced tables, and returns `{ sql, tables }`. |
 | `execute_query`     | `{ query }`   | Requires a non-empty generated SQL value and equality with the validated SQL returned by `construct_sql`; executes through the database service and returns columns, rows, count, truncation flag, and message.               |
-| `summarize_results` | `{ request }` | Requires an executed result; sends all loaded rows (up to 1,000) plus result metadata to the model, streams assistant text, and returns `{ explanation }`. Invoked by the server orchestrator after agent execution. |
+| `summarize_results` | `{ request }` | Requires an executed result; sends all loaded rows (up to 1,000) plus result metadata to the model, streams assistant text, and returns `{ explanation }`. Invoked by the server orchestrator after agent execution.          |
 
 Tool execution, SQL generation, and summary promises are memoized on the request context. Duplicate tool calls within one turn reuse the work, including a rejected generation/execution promise; they do not silently retry work.
 

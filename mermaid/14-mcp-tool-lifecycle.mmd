@@ -1,0 +1,42 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","actorBkg":"#eff6ff","actorBorder":"#2563eb","actorTextColor":"#172033","signalColor":"#475569","signalTextColor":"#172033","noteBkgColor":"#fffbeb","noteBorderColor":"#d97706","noteTextColor":"#78350f"},"sequence":{"mirrorActors":false,"wrap":true,"useMaxWidth":false,"width":210,"actorMargin":45,"messageMargin":28,"messageFontSize":18,"noteFontSize":17}}}%%
+sequenceDiagram
+    accTitle: MCP query tools — inside one database turn
+    accDescr: The agent selects construct_sql and execute_query. The application bridge adds an opaque request ID and validates tool outputs. An in-process linked MCP client/server pair looks up the turn context. Construction loads cached schema, generates SQL with the configured model, validates a single read-only query and table references, then records it. Execution checks exact equality with the validated SQL and runs a read-only database transaction. The agent loop ends after execution. The runner, not the tool-choosing agent, optionally calls summarize_results. Duplicate operations reuse per-turn promises. Cleanup always deletes the request registry entry.
+    %% Companion guide: docs/query-agent.md. bounds: 15-agent-safety-and-limits.mmd
+    autonumber
+    participant A as Agent + server runner
+    participant M as MCP bridge + server
+    participant AI as Configured AI model
+    participant DB as PostgreSQL
+
+    Note over A,M: One shared in-memory MCP connection. separate UUID/context per turn. no network listener
+    A->>AI: Question + history + instructions + two available tools
+    AI-->>A: Choose construct_sql with a self-contained request
+    A->>M: construct_sql: request + application-owned requestId
+    Note over A,M: Model-facing inputs omit requestId. MCP checks inputs/outputs. the bridge validates structured outputs again
+    M->>M: Resolve active context. load cached schema + allowed table names
+    M->>AI: Generate SQL from request, schema, and history
+    AI-->>M: Stream provisional SQL to the browser through callbacks
+    M->>M: Parse one SELECT-based query. check table allow-list. save exact SQL
+    M-->>A: Return sql + referenced tables
+    A->>AI: Supply the construct_sql tool result
+    AI-->>A: Choose execute_query with that SQL
+    A->>M: execute_query: query + same requestId
+    M->>M: Revalidate SQL. require normalized equality with saved SQL
+    M->>DB: Recheck policy. open read-only transaction. fetch bounded rows
+    DB-->>M: Columns + rows + loaded count + truncation state
+    M-->>A: Return validated result. retain it in the turn context
+    Note over A,AI: Middleware ends the agent loop once a result exists. execution is terminal
+
+    opt Runner enables a result explanation
+        A->>M: summarize_results: original request + same requestId
+        Note over A,M: Third MCP tool. called by the runner after the loop, not offered to the agent
+        M->>AI: Request + history + SQL + metadata + every loaded row
+        AI-->>M: Stream grounded explanation to browser through callbacks
+        M-->>A: Return explanation
+    end
+
+    A->>A: Return final SQL, table, explanation, warnings. delete requestId in finally
+    Note over A,M: Generation, execution, and summary promises are reused within this turn. a new turn starts fresh
+    Note over A,M: SQL/query errors fail the turn. Summary-only failure keeps the table with a warning. cancellation fails the turn
+    Note over A,DB: WebSocket enables history and summaries. HTTP /api/post/agent supplies neither

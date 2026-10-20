@@ -1,0 +1,46 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":28,"rankSpacing":40,"wrappingWidth":270}}}%%
+flowchart TB
+    accTitle: Query agent safeguards — enforced checks and remaining limits
+    accDescr: Four panels distinguish code-enforced request and SQL checks, bounded execution and failure behavior, prompt-guided behavior, and data/privacy limitations. Inputs and history are validated, MCP is isolated by per-turn IDs, generated SQL is rechecked and executed unchanged in read-only transactions, and duplicate work is memoized. Six loop model calls exclude generation and summary. WebSocket turns and MCP calls have separate 180-second limits, while database statement and lock timeouts are 10 and 3 seconds. History and results are bounded, cancellation is cooperative, and model providers receive unredacted loaded rows. Read-only checks do not provide authentication, per-user authorization, or a general function sandbox.
+    %% Four independent panels; arrows order the cards within each panel.
+    %% Source references and reading guide: mermaid/README.md
+
+    subgraph INPUT["1. Request and MCP checks — enforced in code"]
+        direction LR
+        I1["WebSocket question: 1–10,000 characters. History: alternating user/assistant pairs; at most 40 messages and 120,000 characters"]:::work
+        I2["MCP schemas validate inputs and outputs. Application adds a UUID; each call resolves only its active turn context"]:::work
+        I3["Credentials and callbacks stay on the server. Shared MCP connection uses in-memory transport; context deleted in finally"]:::work
+        I1 --> I2 --> I3
+    end
+
+    subgraph SQL["2. SQL and database checks — enforced in code"]
+        direction LR
+        S1["Accept one SELECT-based query with recognized table references. Allow SELECT CTEs; check connected-schema table allow-list"]:::data
+        S2["Reject writes, DDL, write CTEs, SELECT INTO, row locks, and multiple statements. Execution must match saved validated SQL"]:::data
+        S3["Database rechecks policy; READ ONLY transaction; fixed search path. Statement timeout: 10 seconds; lock timeout: 3 seconds"]:::data
+        S1 --> S2 --> S3
+    end
+
+    subgraph WORK["3. Work and failure limits — enforced in code"]
+        direction LR
+        W1["At most 6 agent-loop model calls; generation and summary calls are extra. Stop after execution or a tool failure"]:::work
+        W2["Reuse per-turn operation promises, including failures; no automatic provider retry. Query failure ends turn; summary-only failure keeps table + warning"]:::work
+        W3["WebSocket turn: 180 seconds; each MCP call: 180 seconds. Cancel signals propagate; active SQL may run until completion or DB timeout"]:::note
+        W1 --> W2 --> W3
+    end
+
+    subgraph LIMITS["4. Answer and data boundaries — limits remain"]
+        direction LR
+        L1["Prompt guidance: clarify ambiguity; treat history and rows as data; answer only from available facts. Model compliance and correctness are not guaranteed"]:::note
+        L2["At most 1,000 loaded rows per query; count is not total matches. Retained history keeps all rows, dropping whole turns to fit; older facts may be missing"]:::note
+        L3["Real AI receives questions, schema, and loaded rows without redaction. Public demo has no login or per-user policy; DB role controls table/function access"]:::note
+        L1 --> L2 --> L3
+    end
+
+    INPUT ~~~ SQL
+    SQL ~~~ WORK
+    WORK ~~~ LIMITS
+
+    classDef work fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:1.5px;
+    classDef data fill:#ecfdf5,stroke:#059669,color:#064e3b,stroke-width:1.5px;
+    classDef note fill:#fffbeb,stroke:#d97706,color:#78350f,stroke-width:1.5px;

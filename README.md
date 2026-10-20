@@ -129,6 +129,24 @@ This sequence shows a typical question that needs database data. The app checks 
 
 Open the image at full size to follow each exchange. The [agent guide](docs/query-agent.md) also covers direct answers, query failures, and summary warnings.
 
+### Follow-up questions and MCP
+
+Each question starts a fresh agent turn. The browser sends recent question/answer pairs so the model can resolve references such as “those customers” or “use the same filters.” The agent can explain a retained result, ask for clarification, or retrieve fresh data when the question changes the query or goes beyond earlier results.
+
+[![An initial data question uses MCP tools; a follow-up can explain earlier results, ask for clarification, or run a new query using retained conversation history.](mermaid/rendered/13-multi-turn-query-agent.svg)](mermaid/rendered/13-multi-turn-query-agent.svg)
+
+Read the blue first turn, then the purple follow-up branches. Conversation continuity comes from browser-supplied history; the server releases each turn's context when it settles. An earlier table is a snapshot, so fresh facts or rankings across unseen rows require another query.
+
+MCP (Model Context Protocol) connects the agent to typed tools inside the app's Node.js process. The model chooses `construct_sql` and `execute_query`; the server separately calls `summarize_results` after successful execution when summaries are enabled. The shared MCP connection is reused across turns, while an internal request ID keeps each turn's SQL, result, and pending work separate.
+
+The [illustrated MCP flow guide](docs/mcp-flow.md) explains all three diagrams with examples:
+
+| Question                                                                  | Diagram and explanation                                                          |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| What does a follow-up remember, and when does it query again?             | [Multi-turn conversation](docs/mcp-flow.md#follow-a-conversation-across-turns)   |
+| How do generation, validation, execution, and summarization fit together? | [MCP tool lifecycle](docs/mcp-flow.md#follow-one-turn-through-mcp)               |
+| Which safeguards are enforced, and what limits remain?                    | [Agent safety and limits](docs/mcp-flow.md#understand-the-safeguards-and-limits) |
+
 ## API reference
 
 | Endpoint                      | Input                   | Response / behavior                                                                 |
@@ -186,8 +204,6 @@ tests/                          Node test runner suites
 `tests/fixtures/` holds the legacy manual CSV and static schema text; production code uses live PostgreSQL metadata. The provider factory and deterministic model remain server-owned because mock mode is a supported development runtime.
 
 `npm test` checks the local import graph so components, hooks, browser helpers, shared helpers, and wire types cannot transitively import server modules or Node dependencies. We avoid the bare `server-only` package marker: its default Node export throws during direct `tsx server.ts` and Node test execution. The graph check enforces the boundary without changing Node resolution conditions. Keep runtime prompts and catalog SQL under `src/lib/server/`; `next.config.ts` explicitly includes them in production file tracing. Run the custom server from the repository root.
-
-The earlier [React review](REACT_CODE_REVIEW.md) is historical and contains paths/contracts that have since changed.
 
 ## Checks and debugging
 

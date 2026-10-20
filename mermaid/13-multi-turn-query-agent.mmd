@@ -1,0 +1,47 @@
+%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","actorBkg":"#eff6ff","actorBorder":"#2563eb","actorTextColor":"#172033","signalColor":"#475569","signalTextColor":"#172033","noteBkgColor":"#fffbeb","noteBorderColor":"#d97706","noteTextColor":"#78350f"},"sequence":{"mirrorActors":false,"wrap":true,"useMaxWidth":false,"width":205,"actorMargin":45,"messageMargin":28,"messageFontSize":18,"noteFontSize":17}}}%%
+sequenceDiagram
+    accTitle: Multi-turn query agent — what a follow-up remembers and does
+    accDescr: The streaming browser conversation carries history between fresh server turns. A first data question uses MCP to generate and execute SQL. Later turns can explain retained results, ask for clarification, or query again with earlier intent. History holds complete user/assistant pairs with SQL, explanation, metadata, and all loaded rows. oldest pairs are removed to meet 40-message and 120,000-character limits. MCP is shared infrastructure, not persistent conversation memory. Direct-answer and clarification decisions are prompt-guided.
+    %% Read next: 14-mcp-tool-lifecycle.mmd and 15-agent-safety-and-limits.mmd
+    autonumber
+    actor U as You
+    participant B as Browser + history
+    participant A as Fresh agent turn
+    participant M as MCP query tools
+
+    rect rgb(239, 246, 255)
+        U->>B: Turn 1: Show the top 5 customers by balance
+        B->>A: Question + retained history over WebSocket
+        A->>A: Validate history. create a new request ID and context
+        A->>M: construct_sql, then execute_query with its exact SQL
+        M-->>A: Validated SQL + executed rows and metadata
+        A->>M: summarize_results using all loaded rows
+        M-->>A: Explanation of the current result
+        A-->>B: Final answer + SQL + table + warnings
+        Note over A,M: Release this request context in finally. the shared MCP connection stays available
+        B->>B: Save a user/assistant pair: question, explanation, SQL, columns, rows, count, truncated flag
+    end
+
+    rect rgb(245, 243, 255)
+        U->>B: Turn 2: Ask a follow-up
+        B->>A: New question + retained complete pairs
+        Note over B,A: Fresh turn state. continuity comes from supplied history, not the old request ID
+        A->>A: Use history to decide what this question needs
+        alt Earlier results support the answer: Explain that ranking
+            A-->>B: Direct explanation. no tool call
+        else Still ambiguous: Show the best ones
+            A-->>B: Ask what best means. no tool call
+        else New facts or changed SQL: Only active customers. refresh the ranking
+            A->>M: construct_sql with earlier ranking intent + new filter
+            M-->>A: Newly generated and validated SQL
+            A->>M: execute_query, then optional server-run summary
+            M-->>A: Fresh result + explanation
+            A-->>B: Updated answer + SQL + table + warnings
+        end
+        Note over A,M: Each completed turn releases its request context, including direct answers
+    end
+
+    B->>B: After success, append the pair. remove oldest whole pairs until history fits
+    Note over B,A: At most 40 messages / 120,000 characters. Keep all rows in each retained pair. even the newest pair can be dropped if too large
+    Note over U,B: New chat clears browser history. Failed or cancelled turns are not appended
+    Note over A,M: Earlier rows are a snapshot of that query, with its filters and limits. Unseen rows or fresh facts require a new query

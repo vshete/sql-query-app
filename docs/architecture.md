@@ -51,6 +51,8 @@ See [Frontend and rendering](./frontend.md) for component ownership and [Transpo
 
 The visible streamed SQL is provisional until the validated final result arrives. SQL text and assistant-answer text are distinct streams. See [Query agent and tools](./query-agent.md) and [Database and result data](./database.md).
 
+The [illustrated MCP flow guide](./mcp-flow.md) follows the in-process tool exchanges in detail and shows how later turns can answer from history, ask for clarification, or execute a fresh query. It also separates the shared MCP connection's lifetime from each turn's context and browser-owned conversation history.
+
 ## Data and state ownership
 
 | State                                             | Owner                                            | Lifetime / invalidation                                                                 |
@@ -79,7 +81,7 @@ These choices are visible in the current implementation. Record a separate archi
 | Schema cache per pool/process                  | Avoids a catalog read on every turn                                | Refresh does not propagate across instances or tabs                 |
 | Bounded cursor results and browser table state | Limits returned rows; sort, page, and export need no extra query   | Loaded rows are a partial view; there is no full-dataset pagination |
 | Separate model history and visible turns       | Bounds model context while retaining prior results on screen       | Long sessions can still grow browser memory                         |
-| Separate optional result summary               | Summary failures can preserve a successful table                   | Adds a model call and sends all loaded rows to the provider            |
+| Separate optional result summary               | Summary failures can preserve a successful table                   | Adds a model call and sends all loaded rows to the provider         |
 
 ## Deployment and trust boundaries
 
