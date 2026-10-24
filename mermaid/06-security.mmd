@@ -1,4 +1,4 @@
-%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+%%{init: {"theme":"base","fontFamily":"Virgil","themeVariables":{"fontSize":"20px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1","fontFamily":"Virgil"},"flowchart":{"curve":"basis","nodeSpacing":100,"rankSpacing":120,"wrappingWidth":280,"padding":34,"subGraphTitleMargin":{"top":18,"bottom":38}},"look":"handDrawn","handDrawnSeed":42}}%%
 flowchart TB
     accTitle: Public demo — open access with read-only queries
     accDescr: Anyone can try the demonstration without logging in. The app validates a single SELECT-based query and rejects writes, deletes, and schema changes. Accepted queries run in a read-only PostgreSQL transaction and return up to 1,000 rows. Dataset seeding is separate from this query path.
@@ -8,7 +8,7 @@ flowchart TB
     CHECK["Validate SQL: One SELECT-based query"]:::work
     REJECT["Reject writes, deletes, and schema changes"]:::note
     TRANSACTION["Execute with PostgreSQL READ ONLY"]:::work
-    DB[("Read demo data")]:::data
+    DB[("Read data from DB")]:::data
     RESULT["Explore results: Up to 1,000 loaded rows"]:::view
 
     VISITOR -->|1| CHECK

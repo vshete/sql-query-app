@@ -1,4 +1,4 @@
-%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+%%{init: {"theme":"base","fontFamily":"Virgil","themeVariables":{"fontSize":"20px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1","fontFamily":"Virgil"},"flowchart":{"curve":"basis","nodeSpacing":100,"rankSpacing":120,"wrappingWidth":280,"padding":34,"subGraphTitleMargin":{"top":18,"bottom":38}},"look":"handDrawn","handDrawnSeed":42}}%%
 flowchart TB
     accTitle: Architecture — three places with clear responsibilities
     accDescr: The browser owns the screen and current conversation. The app server owns requests, AI tools, and SQL checks. PostgreSQL stores the queried data, while a separate AI provider receives model requests. Startup checks and saved schema information support these core responsibilities.

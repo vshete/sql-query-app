@@ -1,10 +1,10 @@
 "use client";
 
-import { QUERY_PROGRESS, type QueryProgress } from "../types/queryProtocol";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MAX_REQUEST_LENGTH, streamQuery } from "../lib/client/queryStream";
 import { appendQueryHistory } from "../lib/shared/queryConversation";
 import type { QueryAgentResult, QueryChatMessage } from "../types/query.types";
+import { QUERY_PROGRESS, type QueryProgress } from "../types/queryProtocol";
 
 export interface QueryTurn {
   request: string;
@@ -73,6 +73,7 @@ export function useAIQueryGeneration() {
           ]
         : previous.previousTurns,
     }));
+
     try {
       const result = await streamQuery(request, {
         history: history.current,

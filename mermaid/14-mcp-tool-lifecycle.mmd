@@ -1,4 +1,4 @@
-%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","actorBkg":"#eff6ff","actorBorder":"#2563eb","actorTextColor":"#172033","signalColor":"#475569","signalTextColor":"#172033","noteBkgColor":"#fffbeb","noteBorderColor":"#d97706","noteTextColor":"#78350f"},"sequence":{"mirrorActors":false,"wrap":true,"useMaxWidth":false,"width":210,"actorMargin":45,"messageMargin":28,"messageFontSize":18,"noteFontSize":17}}}%%
+%%{init: {"theme":"base","fontFamily":"Virgil","themeVariables":{"fontSize":"20px","actorBkg":"#eff6ff","actorBorder":"#2563eb","actorTextColor":"#172033","signalColor":"#475569","signalTextColor":"#172033","noteBkgColor":"#fffbeb","noteBorderColor":"#d97706","noteTextColor":"#78350f","fontFamily":"Virgil"},"sequence":{"mirrorActors":true,"wrap":true,"useMaxWidth":false,"width":250,"actorMargin":140,"messageMargin":96,"messageFontSize":20,"noteFontSize":20,"noteMargin":30,"boxMargin":28,"boxTextMargin":24},"look":"handDrawn","handDrawnSeed":42}}%%
 sequenceDiagram
     accTitle: MCP query tools — inside one database turn
     accDescr: The agent selects construct_sql and execute_query. The application bridge adds an opaque request ID and validates tool outputs. An in-process linked MCP client/server pair looks up the turn context. Construction loads cached schema, generates SQL with the configured model, validates a single read-only query and table references, then records it. Execution checks exact equality with the validated SQL and runs a read-only database transaction. The agent loop ends after execution. The runner, not the tool-choosing agent, optionally calls summarize_results. Duplicate operations reuse per-turn promises. Cleanup always deletes the request registry entry.
@@ -39,4 +39,4 @@ sequenceDiagram
     A->>A: Return final SQL, table, explanation, warnings. delete requestId in finally
     Note over A,M: Generation, execution, and summary promises are reused within this turn. a new turn starts fresh
     Note over A,M: SQL/query errors fail the turn. Summary-only failure keeps the table with a warning. cancellation fails the turn
-    Note over A,DB: WebSocket enables history and summaries. HTTP /api/post/agent supplies neither
+    Note over A,DB: WebSocket enables history and summaries. No retention by agent server.

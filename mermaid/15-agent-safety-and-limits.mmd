@@ -1,4 +1,4 @@
-%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":28,"rankSpacing":40,"wrappingWidth":270}}}%%
+%%{init: {"theme":"base","fontFamily":"Virgil","themeVariables":{"fontSize":"20px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1","fontFamily":"Virgil"},"flowchart":{"curve":"basis","nodeSpacing":100,"rankSpacing":80,"wrappingWidth":270,"subGraphTitleMargin":{"top":18,"bottom":38},"padding":34},"look":"handDrawn","handDrawnSeed":42}}%%
 flowchart TB
     accTitle: Query agent safeguards — enforced checks and remaining limits
     accDescr: Four panels distinguish code-enforced request and SQL checks, bounded execution and failure behavior, prompt-guided behavior, and data/privacy limitations. Inputs and history are validated, MCP is isolated by per-turn IDs, generated SQL is rechecked and executed unchanged in read-only transactions, and duplicate work is memoized. Six loop model calls exclude generation and summary. WebSocket turns and MCP calls have separate 180-second limits, while database statement and lock timeouts are 10 and 3 seconds. History and results are bounded, cancellation is cooperative, and model providers receive unredacted loaded rows. Read-only checks do not provide authentication, per-user authorization, or a general function sandbox.
@@ -23,7 +23,7 @@ flowchart TB
 
     subgraph WORK["3. Work and failure limits — enforced in code"]
         direction LR
-        W1["At most 6 agent-loop model calls; generation and summary calls are extra. Stop after execution or a tool failure"]:::work
+        W1["At most 6 agent-loop model calls; Summary calls are extra. Stop after execution or a tool failure"]:::work
         W2["Reuse per-turn operation promises, including failures; no automatic provider retry. Query failure ends turn; summary-only failure keeps table + warning"]:::work
         W3["WebSocket turn: 180 seconds; each MCP call: 180 seconds. Cancel signals propagate; active SQL may run until completion or DB timeout"]:::note
         W1 --> W2 --> W3

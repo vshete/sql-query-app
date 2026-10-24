@@ -1,7 +1,7 @@
 import { QUERY_PROGRESS } from "../../../types/queryProtocol";
 import { executeDatabaseQuery } from "../database/database";
-import type { QueryRequestContext } from "./queryAgent.types";
 import { cleanAndValidateSql } from "../database/sqlValidation";
+import type { QueryRequestContext } from "./queryAgent.types";
 
 /** Execute only the SQL produced by this request; share its execution promise across duplicate calls. */
 export async function executeQuery(
@@ -16,7 +16,8 @@ export async function executeQuery(
     throw new Error("Execute exactly the SQL returned by construct_sql.");
   }
 
-  if (!context.queryExecution) context.options.onProgress?.(QUERY_PROGRESS.FETCHING_DATA);
+  if (!context.queryExecution)
+    context.options.onProgress?.(QUERY_PROGRESS.FETCHING_DATA);
   context.queryExecution ??= executeDatabaseQuery(
     validated.sql,
     signal,

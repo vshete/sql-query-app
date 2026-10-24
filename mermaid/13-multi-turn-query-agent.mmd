@@ -1,4 +1,4 @@
-%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","actorBkg":"#eff6ff","actorBorder":"#2563eb","actorTextColor":"#172033","signalColor":"#475569","signalTextColor":"#172033","noteBkgColor":"#fffbeb","noteBorderColor":"#d97706","noteTextColor":"#78350f"},"sequence":{"mirrorActors":false,"wrap":true,"useMaxWidth":false,"width":205,"actorMargin":45,"messageMargin":28,"messageFontSize":18,"noteFontSize":17}}}%%
+%%{init: {"theme":"base","fontFamily":"Virgil","themeVariables":{"fontSize":"20px","actorBkg":"#eff6ff","actorBorder":"#2563eb","actorTextColor":"#172033","signalColor":"#475569","signalTextColor":"#172033","noteBkgColor":"#fffbeb","noteBorderColor":"#d97706","noteTextColor":"#78350f","fontFamily":"Virgil"},"sequence":{"mirrorActors":true,"wrap":true,"useMaxWidth":false,"width":250,"actorMargin":140,"messageMargin":96,"messageFontSize":20,"noteFontSize":20,"noteMargin":30,"boxMargin":28,"boxTextMargin":24},"look":"handDrawn","handDrawnSeed":42}}%%
 sequenceDiagram
     accTitle: Multi-turn query agent — what a follow-up remembers and does
     accDescr: The streaming browser conversation carries history between fresh server turns. A first data question uses MCP to generate and execute SQL. Later turns can explain retained results, ask for clarification, or query again with earlier intent. History holds complete user/assistant pairs with SQL, explanation, metadata, and all loaded rows. oldest pairs are removed to meet 40-message and 120,000-character limits. MCP is shared infrastructure, not persistent conversation memory. Direct-answer and clarification decisions are prompt-guided.
@@ -11,15 +11,15 @@ sequenceDiagram
 
     rect rgb(239, 246, 255)
         U->>B: Turn 1: Show the top 5 customers by balance
-        B->>A: Question + retained history over WebSocket
-        A->>A: Validate history. create a new request ID and context
+        B->>A: Question over WebSocket
+        A->>A: Create a new request ID and context
         A->>M: construct_sql, then execute_query with its exact SQL
         M-->>A: Validated SQL + executed rows and metadata
         A->>M: summarize_results using all loaded rows
         M-->>A: Explanation of the current result
         A-->>B: Final answer + SQL + table + warnings
-        Note over A,M: Release this request context in finally. the shared MCP connection stays available
-        B->>B: Save a user/assistant pair: question, explanation, SQL, columns, rows, count, truncated flag
+        Note over A,M: Release/clear this request context. the shared MCP connection stays available
+        B->>B: Retain user/assistant pair in memory on client: question, explanation, SQL, columns, rows, count, truncated flag
     end
 
     rect rgb(245, 243, 255)
@@ -43,5 +43,5 @@ sequenceDiagram
 
     B->>B: After success, append the pair. remove oldest whole pairs until history fits
     Note over B,A: At most 40 messages / 120,000 characters. Keep all rows in each retained pair. even the newest pair can be dropped if too large
-    Note over U,B: New chat clears browser history. Failed or cancelled turns are not appended
+    Note over U,B: New chat clears conversation from browser memory. Failed or cancelled turns are not appended
     Note over A,M: Earlier rows are a snapshot of that query, with its filters and limits. Unseen rows or fresh facts require a new query

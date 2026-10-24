@@ -25,7 +25,7 @@ The browser handles interaction, the app server coordinates the work, and Postgr
 
 [![System responsibilities: the browser owns the screen and conversation; the app server handles requests, AI tools, and SQL checks; PostgreSQL stores the queried data; an AI provider generates SQL and explanations.](../mermaid/rendered/01-architecture.svg)](../mermaid/rendered/01-architecture.svg)
 
-Open the image at full size, or follow [one question in time order](../mermaid/rendered/08-end-to-end-sequence.svg). The [diagram library](../mermaid/README.md) includes editable Mermaid sources and focused views of cancellation, caching, and result handling.
+Open the image at full size, or follow [one question in time order](../mermaid/rendered/08-end-to-end-sequence.svg). The [diagram library](../mermaid/README.md) includes Excalidraw-style SVG and PNG exports, editable Excalidraw scenes and Mermaid sources, and focused views of cancellation, caching, and result handling.
 
 ## Scope and terminology
 

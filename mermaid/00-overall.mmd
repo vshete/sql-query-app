@@ -1,28 +1,32 @@
-%%{init: {"theme":"base","fontFamily":"Arial, sans-serif","themeVariables":{"fontSize":"18px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1"},"flowchart":{"curve":"basis","nodeSpacing":35,"rankSpacing":45,"wrappingWidth":280}}}%%
+%%{init: {"theme":"base","fontFamily":"Virgil","themeVariables":{"fontSize":"20px","lineColor":"#64748b","primaryTextColor":"#172033","edgeLabelBackground":"#ffffff","clusterBkg":"#f8fafc","clusterBorder":"#cbd5e1","fontFamily":"Virgil"},"flowchart":{"curve":"basis","nodeSpacing":100,"rankSpacing":120,"wrappingWidth":280,"padding":34,"subGraphTitleMargin":{"top":18,"bottom":38}},"look":"handDrawn","handDrawnSeed":42}}%%
 flowchart TB
     accTitle: The whole app — ask, process, and explore
-    accDescr: Follow the numbered connectors. Subnumbers identify branches or smaller steps. Optional actions and supporting relationships are labeled separately. The browser sends questions and recent context to the app server. The server coordinates an AI provider and checked read-only database access. Progress and SQL appear while work continues, followed by an answer, table, or clear error. Schema browsing, cancellation, follow-ups, and local table actions complete the user journey.
+    accDescr: Follow the numbered connectors. The server checks the question and recent context. When fresh database data is needed, first read the cached schema, fetching it from PostgreSQL if missing; next ask the AI provider to generate SQL using that schema; then validate and execute the SQL against PostgreSQL. Only after rows return does the server optionally ask the AI provider to explain them. Without an explanation, return the SQL and table directly. Questions that need no fresh data can receive a direct answer or clarification. Progress updates, schema browsing, cancellation, and local result exploration support this journey.
     %% Companion guide: docs/architecture.md
 
-    BROWSER["Your workspace: Ask questions or follow up"]:::view
-    SERVER["App server: Check requests and coordinate AI"]:::work
-    QUERY["Database access: Check and run read-only SQL"]:::work
+    BROWSER["Your workspace: Ask, follow up, and watch progress"]:::view
+    SERVER["App server: Check the question and recent context"]:::work
+    CACHED_SCHEMA["Read the cached database schema: Fetch from PostgreSQL if missing"]:::data
+    WRITE_SQL["AI provider: Write SQL using the question and schema"]:::work
+    QUERY["Validate and execute read-only SQL: PostgreSQL returns matching rows"]:::data
+    EXPLAIN["AI provider: Explain the returned rows only after execution"]:::work
+    DIRECT["Answer from available context or ask for clarification"]:::work
     RESPONSE["Back in your workspace: Answer, table, warnings, or error"]:::view
     EXPLORE["Explore the loaded rows: Sort, page, resize, or export CSV"]:::view
-    MODEL["AI provider: Writes SQL and explains results"]:::work
-    DB[("PostgreSQL: Your connected database")]:::data
     SCHEMA["Browse tables and columns: Load or refresh the saved list"]:::data
-    LIVE["While waiting: See progress and SQL preview"]:::view
     CANCEL["Cancel the current turn or start a new chat when idle"]:::note
 
     BROWSER -->|1. Submit question| SERVER
-    SERVER -->|2. Query data| QUERY
-    QUERY -->|3. Show response| RESPONSE
-    RESPONSE -->|4. Explore results| EXPLORE
-    SERVER <-->|AI requests and replies| MODEL
-    QUERY <-->|SQL and matching rows| DB
+    SERVER -->|2.a. Fresh data needed| CACHED_SCHEMA
+    CACHED_SCHEMA -->|3. Schema ready| WRITE_SQL
+    WRITE_SQL -->|4. SQL generated| QUERY
+    QUERY -->|5.a. Explanation enabled| EXPLAIN
+    EXPLAIN -->|6. Explanation or warning| RESPONSE
+    QUERY -->|5.b. Explanation disabled| RESPONSE
+    SERVER -->|2.b. No fresh data needed| DIRECT
+    DIRECT -->|3.b. Direct response| RESPONSE
+    RESPONSE -->|7. Explore results| EXPLORE
     BROWSER -.->|Optional| SCHEMA
-    SERVER -.->|While working| LIVE
     BROWSER -.->|Optional| CANCEL
 
     classDef view fill:#eff6ff,stroke:#2563eb,color:#172033,stroke-width:1.5px;
