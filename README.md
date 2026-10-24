@@ -8,7 +8,7 @@ The active workspace provides a schema explorer and chat. Manual SQL components 
 
 [![A question in plain language becomes a checked database query, then an answer and result table.](mermaid/rendered/00-at-a-glance.svg)](mermaid/rendered/00-at-a-glance.svg)
 
-Follow the numbers on the arrows from question to result. Open the image at full size, or explore the [whole-app flow](mermaid/rendered/00-overall.svg) and [diagram library](mermaid/README.md).
+Follow the numbers on the arrows from question to result. Open the image at full size, or explore the [whole-app flow](mermaid/rendered/00-overall.svg) and [diagram library](mermaid/README.md). All diagrams use Excalidraw styling, with SVG, PNG, and editable Excalidraw files available in the library.
 
 ## Quick start
 
@@ -177,7 +177,7 @@ Visible conversation turns retain full result snapshots separately from bounded 
 
 See the [architecture documentation index](docs/README.md) for the component, hook, rendering, agent/tool, transport, database, and testing guides.
 
-[![The whole-app flow connects the browser workspace, app server, AI provider, and PostgreSQL, including progress updates, schema browsing, cancellation, and local result exploration.](mermaid/rendered/00-overall.svg)](mermaid/rendered/00-overall.svg)
+[![The whole-app flow reads the cached schema or fetches it when missing, asks the AI provider to write SQL when fresh data is needed, executes the validated query, and optionally explains returned rows before showing the response.](mermaid/rendered/00-overall.svg)](mermaid/rendered/00-overall.svg)
 
 The numbered arrows show the main request flow; side branches show supporting exchanges and optional actions. See [application architecture](docs/architecture.md) for responsibilities and state ownership.
 
